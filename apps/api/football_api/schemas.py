@@ -16,6 +16,31 @@ class CompetitionSummary(BaseModel):
     country: str | None = None
     logo_url: str | None = None
     is_friendly: bool = False
+    region: str = "Mundo"
+    priority: int = 0
+
+
+class RecommendationResponse(BaseModel):
+    market: str
+    selection: str
+    probability: float
+    confidence: float
+    rating: str
+    kind: str
+    rationale: str
+    decimal_odds: float | None = None
+    bookmaker: str | None = None
+    expected_value: float | None = None
+
+
+class TeamInsightResponse(BaseModel):
+    team_id: int
+    team_name: str
+    venue: str
+    expected_goals: float
+    win_probability: float
+    avoid_defeat_probability: float
+    summary: str
 
 
 class PredictionResponse(BaseModel):
@@ -39,6 +64,8 @@ class PredictionResponse(BaseModel):
     data_quality: str
     likely_scores: list[dict[str, Any]]
     explanation: list[str]
+    recommendations: list[RecommendationResponse] = Field(default_factory=list)
+    team_insights: list[TeamInsightResponse] = Field(default_factory=list)
 
 
 class FixtureResponse(BaseModel):
@@ -63,6 +90,7 @@ class DailyAnalysisResponse(BaseModel):
     total_fixtures: int
     analyzed_fixtures: int
     high_confidence_fixtures: int
+    recommended_fixtures: int
     demo_mode: bool
     fixtures: list[FixtureResponse]
 
@@ -109,4 +137,3 @@ class DataQualityResponse(BaseModel):
     with_corner_prediction: int
     high_quality: int
     coverage_percentage: float = Field(ge=0, le=100)
-

@@ -5,6 +5,31 @@ export type Competition = {
   country: string | null;
   logo_url: string | null;
   is_friendly: boolean;
+  region: "Europa" | "América" | "Asia" | "África" | "Mundo" | "Otros";
+  priority: number;
+};
+
+export type Recommendation = {
+  market: string;
+  selection: string;
+  probability: number;
+  confidence: number;
+  rating: "fuerte" | "moderada" | "tendencia";
+  kind: "valor" | "tendencia";
+  rationale: string;
+  decimal_odds: number | null;
+  bookmaker: string | null;
+  expected_value: number | null;
+};
+
+export type TeamInsight = {
+  team_id: number;
+  team_name: string;
+  venue: "local" | "visitante";
+  expected_goals: number;
+  win_probability: number;
+  avoid_defeat_probability: number;
+  summary: string;
 };
 
 export type Prediction = {
@@ -28,6 +53,8 @@ export type Prediction = {
   data_quality: "alta" | "media" | "baja";
   likely_scores: Array<{ score: string; probability: number }>;
   explanation: string[];
+  recommendations: Recommendation[];
+  team_insights: TeamInsight[];
 };
 
 export type Fixture = {
@@ -52,7 +79,7 @@ export type DailyAnalysis = {
   total_fixtures: number;
   analyzed_fixtures: number;
   high_confidence_fixtures: number;
+  recommended_fixtures: number;
   demo_mode: boolean;
   fixtures: Fixture[];
 };
-

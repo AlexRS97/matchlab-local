@@ -2,6 +2,19 @@ import Link from "next/link";
 import { Fixture } from "@/lib/types";
 
 const percent = (value: number) => `${Math.round(value * 100)}%`;
+const selectionLabel: Record<string, string> = {
+  Home: "Gana local",
+  Draw: "Empate",
+  Away: "Gana visitante",
+  "Over 2.5": "Más de 2,5 goles",
+  "Under 2.5": "Menos de 2,5 goles",
+  "BTTS Yes": "Ambos marcan",
+  "BTTS No": "No marcan ambos",
+  "Over 8.5": "Más de 8,5 córners",
+  "Under 8.5": "Menos de 8,5 córners",
+  "Over 9.5": "Más de 9,5 córners",
+  "Under 9.5": "Menos de 9,5 córners",
+};
 
 function TeamLogo({ name, url }: { name: string; url: string | null }) {
   return url ? <img src={url} alt="" className="team-logo" /> : <span className="team-fallback">{name[0]}</span>;
@@ -9,6 +22,7 @@ function TeamLogo({ name, url }: { name: string; url: string | null }) {
 
 export function FixtureCard({ fixture }: { fixture: Fixture }) {
   const prediction = fixture.prediction;
+  const recommendation = prediction?.recommendations[0];
   const kickoff = new Intl.DateTimeFormat("es-ES", {
     hour: "2-digit",
     minute: "2-digit",
@@ -33,6 +47,14 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
             <div><small>Córners esperados</small><strong>{prediction.total_expected_corners?.toFixed(2) ?? "—"}</strong><span>{prediction.home_expected_corners?.toFixed(2) ?? "s/d"} — {prediction.away_expected_corners?.toFixed(2) ?? "s/d"}</span></div>
             <div><small>Más de 2,5</small><strong>{percent(prediction.over_2_5_probability)}</strong><span>Ambos marcan {percent(prediction.btts_probability)}</span></div>
           </div>
+          {recommendation && (
+            <div className={`recommendation-strip ${recommendation.kind}`}>
+              <span>{recommendation.kind === "valor" ? "Valor detectado" : "Tendencia"}</span>
+              <b>{selectionLabel[recommendation.selection] ?? recommendation.selection}</b>
+              <strong>{percent(recommendation.probability)}</strong>
+              {recommendation.decimal_odds && <em>@ {recommendation.decimal_odds.toFixed(2)}</em>}
+            </div>
+          )}
           <div className="probability-row">
             <span>1 <b>{percent(prediction.home_win_probability)}</b></span>
             <span>X <b>{percent(prediction.draw_probability)}</b></span>
@@ -44,4 +66,3 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
     </Link>
   );
 }
-

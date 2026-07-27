@@ -1,4 +1,5 @@
-from datetime import UTC, date, datetime, time
+from dataclasses import asdict
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,13 +17,17 @@ from football_api.schemas import (
     JobQueuedResponse,
     JobResponse,
     PredictionResponse,
+    RecommendationResponse,
     TeamFormMatch,
     TeamFormResponse,
+    TeamInsightResponse,
     TeamSummary,
 )
+from football_api.services.competition_coverage import competition_priority, competition_region
 from football_api.services.ingestion import IngestionService
 from football_api.services.persistence import FINISHED_STATUSES
 from football_api.services.predictions import PredictionService
+from football_api.services.recommendations import build_recommendations, build_team_insights
 
 router = APIRouter(prefix="/api/v1")
 DbDependency = Annotated[Session, Depends(get_db)]
@@ -39,7 +44,11 @@ def _latest_prediction(fixture: Fixture) -> Prediction | None:
     return max(fixture.predictions, key=lambda item: item.generated_at, default=None)
 
 
-def _prediction_response(prediction: Prediction | None) -> PredictionResponse | None:
+def _prediction_response(
+    prediction: Prediction | None,
+    fixture: Fixture,
+    odds: list[OddsSnapshot] | None = None,
+) -> PredictionResponse | None:
     if prediction is None:
         return None
     total_corners = None
@@ -73,10 +82,27 @@ def _prediction_response(prediction: Prediction | None) -> PredictionResponse | 
         data_quality=prediction.data_quality,
         likely_scores=prediction.likely_scores,
         explanation=prediction.explanation,
+        recommendations=[
+            RecommendationResponse(**asdict(item))
+            for item in build_recommendations(prediction, odds or [])
+        ],
+        team_insights=[
+            TeamInsightResponse(**asdict(item))
+            for item in build_team_insights(fixture, prediction)
+        ],
     )
 
 
-def _fixture_response(fixture: Fixture) -> FixtureResponse:
+def _fixture_response(
+    fixture: Fixture,
+    odds: list[OddsSnapshot] | None = None,
+) -> FixtureResponse:
+    priority = competition_priority(
+        fixture.competition.name,
+        fixture.competition.country,
+        fixture.competition.coverage,
+        fixture.competition.is_friendly,
+    )
     return FixtureResponse(
         id=fixture.id,
         provider_id=fixture.provider_id,
@@ -103,8 +129,13 @@ def _fixture_response(fixture: Fixture) -> FixtureResponse:
             country=fixture.competition.country,
             logo_url=fixture.competition.logo_url,
             is_friendly=fixture.competition.is_friendly,
+            region=competition_region(
+                fixture.competition.name,
+                fixture.competition.country,
+            ),
+            priority=priority,
         ),
-        prediction=_prediction_response(_latest_prediction(fixture)),
+        prediction=_prediction_response(_latest_prediction(fixture), fixture, odds),
     )
 
 
@@ -123,6 +154,26 @@ def _fixtures_for_date(db: Session, target_date: date, settings: Settings) -> li
     ).all()
 
 
+def _odds_by_fixture(
+    db: Session,
+    fixture_ids: list[int],
+) -> dict[int, list[OddsSnapshot]]:
+    if not fixture_ids:
+        return {}
+    rows = db.scalars(
+        select(OddsSnapshot)
+        .where(
+            OddsSnapshot.fixture_id.in_(fixture_ids),
+            OddsSnapshot.captured_at >= datetime.now(UTC) - timedelta(hours=24),
+        )
+        .order_by(OddsSnapshot.captured_at.desc())
+    ).all()
+    grouped: dict[int, list[OddsSnapshot]] = {}
+    for row in rows:
+        grouped.setdefault(row.fixture_id, []).append(row)
+    return grouped
+
+
 @router.get("/fixtures", response_model=list[FixtureResponse])
 def list_fixtures(
     db: DbDependency,
@@ -130,7 +181,9 @@ def list_fixtures(
     target_date: date | None = Query(default=None, alias="date"),
 ) -> list[FixtureResponse]:
     target_date = target_date or datetime.now(settings.timezone).date()
-    return [_fixture_response(fixture) for fixture in _fixtures_for_date(db, target_date, settings)]
+    fixtures = _fixtures_for_date(db, target_date, settings)
+    odds = _odds_by_fixture(db, [fixture.id for fixture in fixtures])
+    return [_fixture_response(fixture, odds.get(fixture.id)) for fixture in fixtures]
 
 
 @router.get("/fixtures/{fixture_id}", response_model=FixtureResponse)
@@ -147,13 +200,22 @@ def get_fixture(fixture_id: int, db: DbDependency) -> FixtureResponse:
     )
     if fixture is None:
         raise HTTPException(status_code=404, detail="Partido no encontrado")
-    return _fixture_response(fixture)
+    odds = _odds_by_fixture(db, [fixture.id])
+    return _fixture_response(fixture, odds.get(fixture.id))
 
 
 @router.get("/fixtures/{fixture_id}/analysis", response_model=PredictionResponse)
 @router.get("/fixtures/{fixture_id}/predictions", response_model=PredictionResponse)
 def get_analysis(fixture_id: int, db: DbDependency) -> PredictionResponse:
-    fixture = db.get(Fixture, fixture_id)
+    fixture = db.scalar(
+        select(Fixture)
+        .options(
+            selectinload(Fixture.home_team),
+            selectinload(Fixture.away_team),
+            selectinload(Fixture.competition),
+        )
+        .where(Fixture.id == fixture_id)
+    )
     if fixture is None:
         raise HTTPException(status_code=404, detail="Partido no encontrado")
     prediction = db.scalar(
@@ -165,7 +227,8 @@ def get_analysis(fixture_id: int, db: DbDependency) -> PredictionResponse:
     if prediction is None:
         prediction = PredictionService(db).generate_for_fixture(fixture)
         db.commit()
-    response = _prediction_response(prediction)
+    odds = _odds_by_fixture(db, [fixture.id])
+    response = _prediction_response(prediction, fixture, odds.get(fixture.id))
     if response is None:
         raise HTTPException(status_code=500, detail="No se pudo generar el analisis")
     return response
@@ -182,7 +245,8 @@ def daily_analysis(
     if not fixtures and (settings.app_demo_mode or settings.api_football_key):
         IngestionService(db, settings).run_daily(target_date)
         fixtures = _fixtures_for_date(db, target_date, settings)
-    responses = [_fixture_response(fixture) for fixture in fixtures]
+    odds = _odds_by_fixture(db, [fixture.id for fixture in fixtures])
+    responses = [_fixture_response(fixture, odds.get(fixture.id)) for fixture in fixtures]
     analyzed = [fixture for fixture in responses if fixture.prediction]
     return DailyAnalysisResponse(
         date=target_date,
@@ -193,6 +257,11 @@ def daily_analysis(
             1
             for fixture in analyzed
             if fixture.prediction and fixture.prediction.confidence >= 0.75
+        ),
+        recommended_fixtures=sum(
+            1
+            for fixture in analyzed
+            if fixture.prediction and fixture.prediction.recommendations
         ),
         demo_mode=not bool(settings.api_football_key),
         fixtures=responses,
@@ -209,6 +278,13 @@ def competitions(db: DbDependency) -> list[CompetitionSummary]:
             country=row.country,
             logo_url=row.logo_url,
             is_friendly=row.is_friendly,
+            region=competition_region(row.name, row.country),
+            priority=competition_priority(
+                row.name,
+                row.country,
+                row.coverage,
+                row.is_friendly,
+            ),
         )
         for row in rows
     ]
@@ -312,7 +388,7 @@ def model_performance(db: DbDependency) -> dict:
         )
     ).all()
     if not settled:
-        return {"model_version": "baseline-poisson-nb-v1", "settled_predictions": 0}
+        return {"model_version": "baseline-poisson-nb-v2", "settled_predictions": 0}
     errors = [
         abs(
             (prediction.home_expected_goals + prediction.away_expected_goals)
@@ -321,7 +397,7 @@ def model_performance(db: DbDependency) -> dict:
         for prediction, fixture in settled
     ]
     return {
-        "model_version": "baseline-poisson-nb-v1",
+        "model_version": "baseline-poisson-nb-v2",
         "settled_predictions": len(settled),
         "goals_mae": round(sum(errors) / len(errors), 4),
         "warning": (
@@ -362,7 +438,7 @@ def generate_predictions(
 def train_model() -> dict:
     return {
         "status": "baseline_active",
-        "model_version": "baseline-poisson-nb-v1",
+        "model_version": "baseline-poisson-nb-v2",
         "message": (
             "El baseline no requiere entrenamiento. "
             "Anade datos y valida antes de ML supervisado."

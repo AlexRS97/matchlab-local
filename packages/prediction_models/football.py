@@ -67,6 +67,8 @@ def build_prediction(
 
     mass = home_win + draw + away_win
     home_win, draw, away_win = (home_win / mass, draw / mass, away_win / mass)
+    over_2_5 /= mass
+    btts /= mass
     likely_scores = [
         {"score": score, "probability": round(probability, 4)}
         for score, probability in sorted(
@@ -98,4 +100,3 @@ def build_prediction(
         over_9_5_corners_probability=round(over_9_5, 4) if over_9_5 is not None else None,
         likely_scores=likely_scores,
     )
-

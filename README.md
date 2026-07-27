@@ -10,14 +10,17 @@ confianza: no presenta una predicción como certeza.
 - API REST con FastAPI y documentación OpenAPI.
 - PostgreSQL, migraciones Alembic y almacenamiento de respuestas RAW.
 - API-Football v3 detrás de una interfaz desacoplada.
-- Ingesta incremental con Celery y Redis; actualización diaria y cada 30 minutos.
+- Ingesta mundial incremental con Celery y Redis, iniciada manualmente para no consumir recursos
+  ni cuota mientras juegas.
 - Histórico reciente, standings y estadísticas de córners por equipo.
 - Baseline regularizado de Poisson para goles y binomial negativa para córners.
 - Snapshots point-in-time de features y predicciones versionadas.
 - Web Next.js responsive con cartelera diaria y análisis detallado.
 - Proyecto dbt con staging, forma rolling y mart diario.
 - Modo demo, pruebas unitarias, Docker Compose y scripts para Windows.
-- Endpoints preparados para cuotas, valor esperado, rendimiento y calidad de datos.
+- Captura de cuotas, detección separada de valor esperado y tendencias, rendimiento y calidad.
+- Filtros por continente y calidad; prioridad para grandes ligas y torneos internacionales sin
+  ocultar el resto de la cartelera.
 
 La autenticación, pagos, app móvil y modelos ML avanzados pertenecen a una fase posterior: requieren
 usuarios reales, decisiones de producto y suficiente histórico validado. La arquitectura y la API ya
@@ -94,19 +97,30 @@ frontend.
 
 ## Flujo de datos
 
-La ingesta consulta primero `/fixtures?date=...`, descarga hasta 20 partidos previos por equipo,
-completa estadísticas faltantes dentro de los límites configurados y obtiene standings una vez por
-liga/temporada. Todas las respuestas se guardan antes de normalizarlas. Los límites de cada ejecución
-se controlan en `.env`:
+La ingesta consulta primero `/fixtures?date=...` y conserva todos los partidos que entrega el
+proveedor para esa fecha. Después prioriza Champions, Europa League, Conference, Libertadores,
+Sudamericana, las cinco grandes ligas y las principales competiciones de Asia y América para
+descargar hasta 20 partidos previos por equipo, estadísticas, clasificación y cuotas. Las
+competiciones restantes continúan visibles y analizadas con la calidad que permitan sus datos.
+
+El catálogo, los historiales, las clasificaciones y las cuotas tienen caché para no repetir llamadas.
+También se respeta la cuota diaria comunicada por API-Football y se reserva un pequeño margen. Los
+límites de cada ejecución se controlan en `.env`:
 
 ```dotenv
 MAX_HISTORY_CALLS_PER_RUN=80
 MAX_STATISTICS_CALLS_PER_RUN=120
+MAX_ODDS_CALLS_PER_RUN=40
 API_FOOTBALL_DAILY_CALL_BUDGET=7000
+API_FOOTBALL_QUOTA_RESERVE=5
+ENABLE_SCHEDULED_INGESTION=false
 ```
 
-Las ligas pequeñas y amistosos pueden carecer de córners, alineaciones o clasificación. En esos casos
-la API devuelve campos nulos y reduce la confianza en lugar de inventar valores.
+`ENABLE_SCHEDULED_INGESTION=false` es el valor recomendado para este PC: solo se actualiza al pulsar
+el botón y nunca arranca con Windows. Las ligas pequeñas y amistosos pueden carecer de córners,
+cuotas o clasificación. En esos casos se omite el mercado correspondiente y se reduce la confianza
+en lugar de inventar valores. Sin una cuota reciente, una señal se etiqueta como **tendencia**, no
+como apuesta de valor.
 
 ## Endpoints principales
 

@@ -15,7 +15,7 @@ from football_api.models import (
 from football_api.services.persistence import FINISHED_STATUSES
 from prediction_models import build_prediction
 
-MODEL_VERSION = "baseline-poisson-nb-v1"
+MODEL_VERSION = "baseline-poisson-nb-v2"
 
 
 def _weighted_mean(values: list[float], fallback: float) -> float:
@@ -82,27 +82,51 @@ class PredictionService:
             fmean([game.away_goals for game in league_games]) if league_games else 1.15
         )
 
-        home = self._team_history(histories, fixture.home_team_id)
-        away = self._team_history(histories, fixture.away_team_id)
-        home_for = _shrink(
+        home = self._team_history(histories, fixture.home_team_id, desired_home=True)
+        away = self._team_history(histories, fixture.away_team_id, desired_home=False)
+        home_for_all = _shrink(
             _weighted_mean(home["goals_for"], league_home_goals),
             len(home["goals_for"]),
             league_home_goals,
         )
-        home_against = _shrink(
+        home_against_all = _shrink(
             _weighted_mean(home["goals_against"], league_away_goals),
             len(home["goals_against"]),
             league_away_goals,
         )
-        away_for = _shrink(
+        away_for_all = _shrink(
             _weighted_mean(away["goals_for"], league_away_goals),
             len(away["goals_for"]),
             league_away_goals,
         )
-        away_against = _shrink(
+        away_against_all = _shrink(
             _weighted_mean(away["goals_against"], league_home_goals),
             len(away["goals_against"]),
             league_home_goals,
+        )
+        home_for = _shrink(
+            _weighted_mean(home["venue_goals_for"], home_for_all),
+            len(home["venue_goals_for"]),
+            home_for_all,
+            strength=5,
+        )
+        home_against = _shrink(
+            _weighted_mean(home["venue_goals_against"], home_against_all),
+            len(home["venue_goals_against"]),
+            home_against_all,
+            strength=5,
+        )
+        away_for = _shrink(
+            _weighted_mean(away["venue_goals_for"], away_for_all),
+            len(away["venue_goals_for"]),
+            away_for_all,
+            strength=5,
+        )
+        away_against = _shrink(
+            _weighted_mean(away["venue_goals_against"], away_against_all),
+            len(away["venue_goals_against"]),
+            away_against_all,
+            strength=5,
         )
 
         home_xg = math.sqrt(max(0.1, home_for * away_against)) * 1.06
@@ -124,6 +148,8 @@ class PredictionService:
         minimum_matches = min(len(home["goals_for"]), len(away["goals_for"]))
         corner_sample = min(len(home["corners_for"]), len(away["corners_for"]))
         confidence = min(0.92, 0.25 + minimum_matches * 0.025 + corner_sample * 0.012)
+        if min(len(home["venue_goals_for"]), len(away["venue_goals_for"])) >= 5:
+            confidence += 0.03
         if home_standing and away_standing:
             confidence += 0.05
         if fixture.competition.is_friendly:
@@ -134,6 +160,8 @@ class PredictionService:
         features = {
             "home_matches": len(home["goals_for"]),
             "away_matches": len(away["goals_for"]),
+            "home_venue_matches": len(home["venue_goals_for"]),
+            "away_venue_matches": len(away["venue_goals_for"]),
             "home_goals_for_weighted": round(home_for, 3),
             "home_goals_against_weighted": round(home_against, 3),
             "away_goals_for_weighted": round(away_for, 3),
@@ -170,10 +198,17 @@ class PredictionService:
         return prediction
 
     @staticmethod
-    def _team_history(histories: list[Fixture], team_id: int) -> dict[str, list[float]]:
+    def _team_history(
+        histories: list[Fixture],
+        team_id: int,
+        *,
+        desired_home: bool,
+    ) -> dict[str, list[float]]:
         result: dict[str, list[float]] = {
             "goals_for": [],
             "goals_against": [],
+            "venue_goals_for": [],
+            "venue_goals_against": [],
             "corners_for": [],
             "corners_against": [],
         }
@@ -186,6 +221,9 @@ class PredictionService:
             if own_goals is not None and opponent_goals is not None:
                 result["goals_for"].append(float(own_goals))
                 result["goals_against"].append(float(opponent_goals))
+                if is_home == desired_home:
+                    result["venue_goals_for"].append(float(own_goals))
+                    result["venue_goals_against"].append(float(opponent_goals))
             own_stat = next((stat for stat in game.statistics if stat.team_id == team_id), None)
             opponent_stat = next(
                 (stat for stat in game.statistics if stat.team_id != team_id), None

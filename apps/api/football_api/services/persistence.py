@@ -1,5 +1,6 @@
 import hashlib
 import json
+from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from football_api.models import (
     Competition,
     Fixture,
+    OddsSnapshot,
     RawApiResponse,
     StandingSnapshot,
     Team,
@@ -225,4 +227,78 @@ def store_standings(
                     )
                 )
                 stored += 1
+    return stored
+
+
+def _normalized_odd(market: str, value: str) -> tuple[str, str] | None:
+    market_lower = market.lower()
+    value_lower = value.lower()
+    if "winner" in market_lower or market_lower in {"match result", "1x2"}:
+        selections = {"home": "Home", "draw": "Draw", "away": "Away"}
+        selection = selections.get(value_lower)
+        return ("Resultado", selection) if selection else None
+    if "both teams" in market_lower and value_lower in {"yes", "no"}:
+        return "Ambos marcan", f"BTTS {value_lower.title()}"
+    if "corner" in market_lower:
+        for line in ("8.5", "9.5"):
+            if line in value and ("over" in value_lower or "under" in value_lower):
+                direction = "Over" if "over" in value_lower else "Under"
+                return "Córners", f"{direction} {line}"
+    if (
+        ("goal" in market_lower or "over/under" in market_lower)
+        and "2.5" in value
+        and ("over" in value_lower or "under" in value_lower)
+    ):
+        direction = "Over" if "over" in value_lower else "Under"
+        return "Goles", f"{direction} 2.5"
+    return None
+
+
+def store_odds(
+    db: Session,
+    fixture: Fixture,
+    response_items: list[dict[str, Any]],
+) -> int:
+    stored = 0
+    now = datetime.now(UTC)
+    for item in response_items:
+        captured_at = now
+        if item.get("update"):
+            with suppress(ValueError):
+                captured_at = datetime.fromisoformat(str(item["update"]).replace("Z", "+00:00"))
+        for bookmaker in item.get("bookmakers", []):
+            bookmaker_name = bookmaker.get("name") or "Desconocida"
+            for bet in bookmaker.get("bets", []):
+                market = bet.get("name") or ""
+                for value in bet.get("values", []):
+                    normalized = _normalized_odd(market, str(value.get("value") or ""))
+                    try:
+                        decimal_odds = float(value.get("odd"))
+                    except (TypeError, ValueError):
+                        continue
+                    if normalized is None or decimal_odds <= 1:
+                        continue
+                    market_name, selection = normalized
+                    exists = db.scalar(
+                        select(OddsSnapshot.id).where(
+                            OddsSnapshot.fixture_id == fixture.id,
+                            OddsSnapshot.bookmaker == bookmaker_name,
+                            OddsSnapshot.market == market_name,
+                            OddsSnapshot.selection == selection,
+                            OddsSnapshot.captured_at == captured_at,
+                        )
+                    )
+                    if exists is not None:
+                        continue
+                    db.add(
+                        OddsSnapshot(
+                            fixture_id=fixture.id,
+                            bookmaker=bookmaker_name,
+                            market=market_name,
+                            selection=selection,
+                            decimal_odds=decimal_odds,
+                            captured_at=captured_at,
+                        )
+                    )
+                    stored += 1
     return stored

@@ -24,8 +24,15 @@ class Settings(BaseSettings):
     api_football_base_url: str = "https://v3.football.api-sports.io"
     api_football_timeout_seconds: int = 30
     api_football_daily_call_budget: int = 7000
+    api_football_quota_reserve: int = 5
     max_history_calls_per_run: int = 80
     max_statistics_calls_per_run: int = 120
+    max_odds_calls_per_run: int = 40
+    league_catalog_cache_hours: int = 168
+    team_history_cache_hours: int = 18
+    standings_cache_hours: int = 12
+    odds_cache_hours: int = 3
+    enable_scheduled_ingestion: bool = False
 
     @field_validator("app_timezone")
     @classmethod
@@ -45,4 +52,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

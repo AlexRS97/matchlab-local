@@ -9,15 +9,9 @@ from football_api.services.ingestion import IngestionService
 
 settings = get_settings()
 celery_app = Celery("football_analytics", broker=settings.redis_url, backend=settings.redis_url)
-celery_app.conf.update(
-    timezone=settings.app_timezone,
-    enable_utc=True,
-    task_track_started=True,
-    task_serializer="json",
-    result_serializer="json",
-    accept_content=["json"],
-    broker_connection_retry_on_startup=True,
-    beat_schedule={
+beat_schedule = {}
+if settings.enable_scheduled_ingestion:
+    beat_schedule = {
         "daily-football-ingestion": {
             "task": "football.ingest_date",
             "schedule": crontab(hour=5, minute=0),
@@ -26,7 +20,16 @@ celery_app.conf.update(
             "task": "football.ingest_today",
             "schedule": crontab(minute="*/30"),
         },
-    },
+    }
+celery_app.conf.update(
+    timezone=settings.app_timezone,
+    enable_utc=True,
+    task_track_started=True,
+    task_serializer="json",
+    result_serializer="json",
+    accept_content=["json"],
+    broker_connection_retry_on_startup=True,
+    beat_schedule=beat_schedule,
 )
 
 
