@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: app
+    schema: public
+    tables:
+      - name: fixtures
+      - name: teams
+      - name: competitions
+      - name: team_fixture_statistics
+      - name: predictions
+

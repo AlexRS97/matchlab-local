@@ -1,0 +1,13 @@
+football_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', 'postgres') }}"
+      port: "{{ env_var('DBT_PORT', '5432') | int }}"
+      user: "{{ env_var('DBT_USER', 'football') }}"
+      password: "{{ env_var('DBT_PASSWORD', 'football_local_password') }}"
+      dbname: "{{ env_var('DBT_DATABASE', 'football_analytics') }}"
+      schema: "{{ env_var('DBT_SCHEMA', 'analytics') }}"
+      threads: 4
+
