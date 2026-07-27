@@ -9,6 +9,12 @@ function madridToday() {
   }).format(new Date());
 }
 
+const timeFormatter = new Intl.DateTimeFormat("es-ES", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Madrid",
+});
+
 type Search = { date?: string; region?: string; quality?: string; q?: string };
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
@@ -33,8 +39,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     .filter((fixture) => !params.region || params.region === "Todas" || fixture.competition.region === params.region)
     .filter((fixture) => !params.quality || params.quality === "Todas" || fixture.prediction?.data_quality === params.quality)
     .filter((fixture) => !query || `${fixture.home_team.name} ${fixture.away_team.name} ${fixture.competition.name} ${fixture.competition.country}`.toLocaleLowerCase("es").includes(query))
-    .sort((a, b) => b.competition.priority - a.competition.priority || a.kickoff_at.localeCompare(b.kickoff_at));
-  const groups = Map.groupBy(visible, (fixture) => `${fixture.competition.region} · ${fixture.competition.country ?? "Mundo"} · ${fixture.competition.name}`);
+    .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at) || b.competition.priority - a.competition.priority);
+  const groups = Map.groupBy(visible, (fixture) => fixture.kickoff_at);
   const formattedDate = new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`));
 
   return (
@@ -42,8 +48,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <section className="hero">
         <div>
           <p className="eyebrow">CENTRO MUNDIAL DE ANÁLISIS</p>
-          <h1>Todo el fútbol,<br /><em>ordenado por señal.</em></h1>
-          <p className="hero-copy">Europa, América, Asia, África y competiciones internacionales. Todos los partidos disponibles, con forma, goles, córners, confianza y recomendaciones responsables.</p>
+          <h1>Próximos partidos,<br /><em>en orden de inicio.</em></h1>
+          <p className="hero-copy">La cartelera empieza por el encuentro más cercano. Los partidos cuyo inicio ya ha pasado se retiran, y cada tarjeta resume predicción, confianza y mejor recomendación.</p>
         </div>
         <div className="date-panel">
           <label htmlFor="date">Jornada analizada</label>
@@ -58,7 +64,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       {data.demo_mode && <div className="demo-banner"><b>Modo demostración</b><span>Los datos son simulados. Añade tu API_FOOTBALL_KEY al archivo .env para descargar la cartelera mundial real.</span></div>}
 
       <section className="summary">
-        <div><span>Partidos</span><strong>{data.total_fixtures}</strong></div>
+        <div><span>Por comenzar</span><strong>{data.total_fixtures}</strong></div>
         <div><span>Analizados</span><strong>{data.analyzed_fixtures}</strong></div>
         <div><span>Con señal</span><strong>{data.recommended_fixtures}</strong></div>
         <div><span>Fecha</span><strong className="date-stat">{formattedDate}</strong></div>
@@ -80,11 +86,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       </form>
 
       <section className="matches-section">
-        <div className="section-title"><div><p className="eyebrow">{data.timezone}</p><h2>Cartelera completa</h2></div><span>{visible.length} de {data.total_fixtures} encuentros</span></div>
-        {visible.length === 0 && <div className="empty"><h3>No hay partidos con estos filtros.</h3><p>Actualiza los datos o amplía la búsqueda.</p></div>}
-        {[...groups.entries()].map(([competition, fixtures]) => (
-          <div className="competition" key={competition}>
-            <h3>{competition}<span>{fixtures.length}</span></h3>
+        <div className="section-title"><div><p className="eyebrow">{data.timezone}</p><h2>Horario de próximos partidos</h2></div><span>{visible.length} de {data.total_fixtures} encuentros</span></div>
+        {visible.length === 0 && (
+          <div className="empty">
+            <h3>{data.total_fixtures === 0 ? "No quedan partidos por comenzar." : "Ningún partido coincide con los filtros."}</h3>
+            <p>{data.total_fixtures === 0 ? "Elige mañana o pulsa Actualizar datos." : "Amplía la región, la calidad o la búsqueda."}</p>
+          </div>
+        )}
+        {[...groups.entries()].map(([kickoff, fixtures], index) => (
+          <div className="time-group" key={kickoff}>
+            <h3>
+              <time dateTime={kickoff}>{timeFormatter.format(new Date(kickoff))}</time>
+              <span>{fixtures.length} {fixtures.length === 1 ? "partido" : "partidos"}</span>
+              {index === 0 && <em>Lo siguiente</em>}
+            </h3>
             <div className="fixture-list">{fixtures.map((fixture) => <FixtureCard key={fixture.id} fixture={fixture} />)}</div>
           </div>
         ))}

@@ -141,6 +141,7 @@ def _fixture_response(
 
 def _fixtures_for_date(db: Session, target_date: date, settings: Settings) -> list[Fixture]:
     start, end = _date_bounds(target_date, settings)
+    start = max(start, datetime.now(UTC))
     return db.scalars(
         select(Fixture)
         .options(
@@ -149,7 +150,10 @@ def _fixtures_for_date(db: Session, target_date: date, settings: Settings) -> li
             selectinload(Fixture.competition),
             selectinload(Fixture.predictions),
         )
-        .where(Fixture.kickoff_at.between(start, end))
+        .where(
+            Fixture.kickoff_at.between(start, end),
+            Fixture.status.in_({"NS", "TBD"}),
+        )
         .order_by(Fixture.kickoff_at)
     ).all()
 
@@ -172,6 +176,22 @@ def _odds_by_fixture(
     for row in rows:
         grouped.setdefault(row.fixture_id, []).append(row)
     return grouped
+
+
+def _has_stored_fixture_for_date(
+    db: Session,
+    target_date: date,
+    settings: Settings,
+) -> bool:
+    start, end = _date_bounds(target_date, settings)
+    return (
+        db.scalar(
+            select(Fixture.id)
+            .where(Fixture.kickoff_at.between(start, end))
+            .limit(1)
+        )
+        is not None
+    )
 
 
 @router.get("/fixtures", response_model=list[FixtureResponse])
@@ -242,7 +262,11 @@ def daily_analysis(
 ) -> DailyAnalysisResponse:
     target_date = target_date or datetime.now(settings.timezone).date()
     fixtures = _fixtures_for_date(db, target_date, settings)
-    if not fixtures and (settings.app_demo_mode or settings.api_football_key):
+    if (
+        not fixtures
+        and settings.app_demo_mode
+        and not _has_stored_fixture_for_date(db, target_date, settings)
+    ):
         IngestionService(db, settings).run_daily(target_date)
         fixtures = _fixtures_for_date(db, target_date, settings)
     odds = _odds_by_fixture(db, [fixture.id for fixture in fixtures])

@@ -20,20 +20,34 @@ function TeamLogo({ name, url }: { name: string; url: string | null }) {
   return url ? <img src={url} alt="" className="team-logo" /> : <span className="team-fallback">{name[0]}</span>;
 }
 
+function startsIn(kickoff: string) {
+  const minutes = Math.max(0, Math.ceil((new Date(kickoff).getTime() - Date.now()) / 60_000));
+  if (minutes < 60) return `Empieza en ${minutes} min`;
+  if (minutes < 24 * 60) {
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return `Empieza en ${hours} h${rest ? ` ${rest} min` : ""}`;
+  }
+  const days = Math.floor(minutes / (24 * 60));
+  return `Empieza en ${days} ${days === 1 ? "día" : "días"}`;
+}
+
 export function FixtureCard({ fixture }: { fixture: Fixture }) {
   const prediction = fixture.prediction;
   const recommendation = prediction?.recommendations[0];
-  const kickoff = new Intl.DateTimeFormat("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Madrid",
-  }).format(new Date(fixture.kickoff_at));
 
   return (
     <Link href={`/partidos/${fixture.id}`} className="fixture-card">
       <div className="fixture-head">
-        <span>{kickoff} · {fixture.round_name ?? "Próximo partido"}</span>
-        {prediction && <span className={`quality ${prediction.data_quality}`}>Calidad {prediction.data_quality}</span>}
+        <span className="fixture-competition">
+          <b>{fixture.competition.name}</b>
+          {fixture.competition.country && <> · {fixture.competition.country}</>}
+          {fixture.round_name && <> · {fixture.round_name}</>}
+        </span>
+        <span className="fixture-badges">
+          <span className="starts-in">{startsIn(fixture.kickoff_at)}</span>
+          {prediction && <span className={`quality ${prediction.data_quality}`}>Calidad {prediction.data_quality}</span>}
+        </span>
       </div>
       <div className="teams">
         <div className="team"><TeamLogo name={fixture.home_team.name} url={fixture.home_team.logo_url} /><span>{fixture.home_team.name}</span></div>
@@ -47,12 +61,17 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
             <div><small>Córners esperados</small><strong>{prediction.total_expected_corners?.toFixed(2) ?? "—"}</strong><span>{prediction.home_expected_corners?.toFixed(2) ?? "s/d"} — {prediction.away_expected_corners?.toFixed(2) ?? "s/d"}</span></div>
             <div><small>Más de 2,5</small><strong>{percent(prediction.over_2_5_probability)}</strong><span>Ambos marcan {percent(prediction.btts_probability)}</span></div>
           </div>
-          {recommendation && (
+          {recommendation ? (
             <div className={`recommendation-strip ${recommendation.kind}`}>
-              <span>{recommendation.kind === "valor" ? "Valor detectado" : "Tendencia"}</span>
+              <span>{recommendation.kind === "valor" ? "Valor detectado" : "Mejor tendencia"}</span>
               <b>{selectionLabel[recommendation.selection] ?? recommendation.selection}</b>
               <strong>{percent(recommendation.probability)}</strong>
               {recommendation.decimal_odds && <em>@ {recommendation.decimal_odds.toFixed(2)}</em>}
+            </div>
+          ) : (
+            <div className="recommendation-strip neutral">
+              <span>Sin recomendación</span>
+              <b>La señal no supera el mínimo de calidad</b>
             </div>
           )}
           <div className="probability-row">

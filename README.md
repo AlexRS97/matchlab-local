@@ -21,6 +21,8 @@ confianza: no presenta una predicción como certeza.
 - Captura de cuotas, detección separada de valor esperado y tendencias, rendimiento y calidad.
 - Filtros por continente y calidad; prioridad para grandes ligas y torneos internacionales sin
   ocultar el resto de la cartelera.
+- Cartelera ordenada estrictamente por hora de inicio: primero el encuentro más cercano; los
+  partidos iniciados, finalizados o cancelados dejan de mostrarse.
 
 La autenticación, pagos, app móvil y modelos ML avanzados pertenecen a una fase posterior: requieren
 usuarios reales, decisiones de producto y suficiente histórico validado. La arquitectura y la API ya
