@@ -72,7 +72,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <div className={`update-status ${data.automatic_refresh ? "active" : "inactive"}`}>
         <span>{data.automatic_refresh ? "Actualización automática activa" : "Actualización real pendiente de clave"}</span>
         <b>Última actualización: {lastUpdated}</b>
-        <small>{data.automatic_refresh ? `Máximo cada ${data.automatic_refresh_hours} horas mientras MatchLab esté abierto` : "Puedes seguir usando el botón Actualizar datos en modo demostración"}</small>
+        <small>{data.automatic_refresh ? `Actualización completa cada ${data.automatic_refresh_minutes} minutos mientras MatchLab esté abierto` : `Configurada cada ${data.automatic_refresh_minutes} minutos; se activará al añadir la clave real`}</small>
       </div>
 
       <section className="summary">

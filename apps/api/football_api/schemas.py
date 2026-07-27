@@ -93,7 +93,7 @@ class DailyAnalysisResponse(BaseModel):
     recommended_fixtures: int
     demo_mode: bool
     automatic_refresh: bool
-    automatic_refresh_hours: int
+    automatic_refresh_minutes: int
     last_updated_at: datetime | None = None
     fixtures: list[FixtureResponse]
 

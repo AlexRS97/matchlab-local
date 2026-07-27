@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     team_history_cache_hours: int = 18
     standings_cache_hours: int = 12
     odds_cache_hours: int = 3
-    prediction_refresh_hours: int = 3
-    automatic_refresh_hours: int = 3
+    prediction_refresh_minutes: int = 30
+    automatic_refresh_minutes: int = 30
     enable_scheduled_ingestion: bool = True
 
     @field_validator("app_timezone")

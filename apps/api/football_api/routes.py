@@ -300,7 +300,7 @@ def daily_analysis(
         automatic_refresh=(
             settings.enable_scheduled_ingestion and bool(settings.api_football_key)
         ),
-        automatic_refresh_hours=settings.automatic_refresh_hours,
+        automatic_refresh_minutes=settings.automatic_refresh_minutes,
         last_updated_at=latest_job.finished_at if latest_job else None,
         fixtures=responses,
     )

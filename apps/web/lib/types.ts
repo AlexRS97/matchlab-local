@@ -82,7 +82,7 @@ export type DailyAnalysis = {
   recommended_fixtures: number;
   demo_mode: boolean;
   automatic_refresh: boolean;
-  automatic_refresh_hours: number;
+  automatic_refresh_minutes: number;
   last_updated_at: string | null;
   fixtures: Fixture[];
 };

@@ -51,9 +51,15 @@ class IngestionService:
 
             predictor = PredictionService(self.db)
             generated = 0
-            fixture_ids = [fixture.id for fixture in fixtures]
-            prediction_cutoff = datetime.now(UTC) - timedelta(
-                hours=self.settings.prediction_refresh_hours
+            now = datetime.now(UTC)
+            prediction_fixtures = [
+                fixture
+                for fixture in fixtures
+                if fixture.status in {"NS", "TBD"} and fixture.kickoff_at > now
+            ]
+            fixture_ids = [fixture.id for fixture in prediction_fixtures]
+            prediction_cutoff = now - timedelta(
+                minutes=self.settings.prediction_refresh_minutes
             )
             recently_predicted = set(
                 self.db.scalars(
@@ -65,7 +71,7 @@ class IngestionService:
                     .distinct()
                 ).all()
             )
-            for fixture in fixtures:
+            for fixture in prediction_fixtures:
                 if fixture.id in recently_predicted:
                     continue
                 predictor.generate_for_fixture(fixture)

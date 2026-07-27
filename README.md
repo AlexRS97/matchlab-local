@@ -11,7 +11,7 @@ confianza: no presenta una predicción como certeza.
 - PostgreSQL, migraciones Alembic y almacenamiento de respuestas RAW.
 - API-Football v3 detrás de una interfaz desacoplada.
 - Ingesta mundial incremental con Celery y Redis. Al abrir MatchLab comprueba si los datos están
-  antiguos y, mientras siga abierto, actualiza como máximo una vez cada tres horas.
+  antiguos y, mientras siga abierto, ejecuta el ciclo de actualización cada 30 minutos.
 - Histórico reciente, standings y estadísticas de córners por equipo.
 - Baseline regularizado de Poisson para goles y binomial negativa para córners.
 - Snapshots point-in-time de features y predicciones versionadas.
@@ -115,16 +115,17 @@ MAX_STATISTICS_CALLS_PER_RUN=120
 MAX_ODDS_CALLS_PER_RUN=40
 API_FOOTBALL_DAILY_CALL_BUDGET=7000
 API_FOOTBALL_QUOTA_RESERVE=5
-PREDICTION_REFRESH_HOURS=3
-AUTOMATIC_REFRESH_HOURS=3
+PREDICTION_REFRESH_MINUTES=30
+AUTOMATIC_REFRESH_MINUTES=30
 ENABLE_SCHEDULED_INGESTION=true
 ```
 
 La actualización automática solo existe mientras MatchLab está abierto: no inicia Docker ni la
-aplicación con Windows y se detiene completamente con **Detener para jugar**. Antes de consultar al
-proveedor comprueba si ya hubo una actualización en las últimas tres horas; además, las cachés y la
-reserva de cuota evitan repetir llamadas. Las predicciones recientes se reutilizan y únicamente se
-recalculan cuando han envejecido.
+aplicación con Windows y se detiene completamente con **Detener para jugar**. El ciclo se ejecuta a
+las `:00` y `:30` de cada hora; al abrir el programa también se lanza si la última actualización
+tiene más de 30 minutos. Las cachés y la reserva de cuota evitan descargar otra vez historiales,
+clasificaciones o cuotas que el proveedor todavía no ha renovado. Las predicciones pendientes se
+recalculan cada 30 minutos y no se generan predicciones nuevas para partidos que ya comenzaron.
 
 Las ligas pequeñas y amistosos pueden carecer de córners, cuotas o clasificación. En esos casos se
 omite el mercado correspondiente y se reduce la confianza en lugar de inventar valores. Sin una
