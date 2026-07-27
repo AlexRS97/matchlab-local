@@ -45,7 +45,14 @@ if (-not $DockerReady) {
         exit 1
     }
     Write-Host "Iniciando Docker Desktop..." -ForegroundColor Cyan
-    Start-Process -FilePath $DockerDesktop
+    $PreviousPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & $Docker desktop start *> $null
+    $DesktopStartExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $PreviousPreference
+    if ($DesktopStartExitCode -ne 0) {
+        Start-Process -FilePath $DockerDesktop -WindowStyle Hidden
+    }
     for ($Attempt = 1; $Attempt -le 60; $Attempt++) {
         Start-Sleep -Seconds 2
         if (Test-Path $DockerPipe) {

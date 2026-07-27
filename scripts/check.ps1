@@ -16,6 +16,22 @@ if (-not $Docker) {
     exit 1
 }
 
+$ParserErrors = @()
+Get-ChildItem (Join-Path $Root "scripts") -Filter "*.ps1" | ForEach-Object {
+    $Tokens = $null
+    $FileErrors = $null
+    [System.Management.Automation.Language.Parser]::ParseFile(
+        $_.FullName,
+        [ref]$Tokens,
+        [ref]$FileErrors
+    ) | Out-Null
+    $ParserErrors += $FileErrors
+}
+if ($ParserErrors.Count -gt 0) {
+    $ParserErrors | Format-List
+    exit 1
+}
+
 & $Docker compose config --quiet
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -28,4 +44,4 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $Docker compose run --rm api pytest
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "Configuracion, compilacion, lint y tests completados." -ForegroundColor Green
+Write-Host "Scripts, configuracion, compilacion, lint y tests completados." -ForegroundColor Green

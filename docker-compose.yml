@@ -1,5 +1,11 @@
 name: football-analytics
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,10 +13,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-football_analytics}
       POSTGRES_USER: ${POSTGRES_USER:-football}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-football_local_password}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    cpus: 0.50
+    mem_limit: 384m
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-football} -d ${POSTGRES_DB:-football_analytics}"]
       interval: 5s
@@ -19,10 +26,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
+    cpus: 0.25
+    mem_limit: 128m
+    logging: *default-logging
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -38,6 +46,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    cpus: 0.50
+    mem_limit: 384m
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
     restart: "no"
 
   api:
@@ -45,14 +59,15 @@ services:
       context: .
       dockerfile: infrastructure/docker/api.Dockerfile
     env_file: .env
-    command: uvicorn football_api.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn football_api.main:app --host 0.0.0.0 --port 8000
     ports:
-      - "8000:8000"
-    volumes:
-      - ./apps/api:/app/apps/api
-      - ./packages:/app/packages
-      - ./alembic.ini:/app/alembic.ini
-      - ./migrations:/app/migrations
+      - "127.0.0.1:8000:8000"
+    cpus: 0.75
+    mem_limit: 512m
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -70,9 +85,12 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
     env_file: .env
     command: celery -A football_api.worker.celery_app worker --loglevel=INFO --concurrency=2
-    volumes:
-      - ./apps/api:/app/apps/api
-      - ./packages:/app/packages
+    cpus: 1.00
+    mem_limit: 640m
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -85,9 +103,12 @@ services:
       dockerfile: infrastructure/docker/api.Dockerfile
     env_file: .env
     command: celery -A football_api.worker.celery_app beat --loglevel=INFO
-    volumes:
-      - ./apps/api:/app/apps/api
-      - ./packages:/app/packages
+    cpus: 0.25
+    mem_limit: 192m
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -102,10 +123,22 @@ services:
       API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
+    cpus: 0.50
+    mem_limit: 384m
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   dbt:
     build:
@@ -120,6 +153,9 @@ services:
       DBT_SCHEMA: analytics
     volumes:
       - ./dbt:/usr/app/dbt
+    cpus: 1.00
+    mem_limit: 768m
+    logging: *default-logging
     depends_on:
       migrate:
         condition: service_completed_successfully

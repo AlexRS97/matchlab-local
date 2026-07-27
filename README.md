@@ -40,7 +40,19 @@ CPU Configuration > SVM Mode > Enabled`. Guarda los cambios con `F10`.
 
 ## Arranque rápido
 
-Abre PowerShell en esta carpeta y ejecuta:
+La forma recomendada de usar MatchLab en Windows es el acceso directo del escritorio. Para instalarlo
+o repararlo:
+
+```powershell
+.\scripts\install-desktop.ps1
+```
+
+Al abrir **MatchLab** aparece su icono en la zona de iconos ocultos de la barra de tareas. Desde su
+menú puedes abrir la web, actualizar los datos, reactivar los servicios o seleccionar **Detener para
+jugar**. Esta última opción detiene los contenedores y Docker Desktop sin borrar la base de datos.
+Al volver a abrir el acceso directo, todo arranca de nuevo automáticamente.
+
+También puedes iniciarlo manualmente. Abre PowerShell en esta carpeta y ejecuta:
 
 ```powershell
 .\scripts\start.ps1
@@ -50,8 +62,7 @@ La primera ejecución crea `.env`, construye los servicios, aplica las migracion
 
 - Web: <http://localhost:3000>
 - API y documentación interactiva: <http://localhost:8000/docs>
-- PostgreSQL: `localhost:5432`
-- Redis: `localhost:6379`
+- PostgreSQL y Redis: accesibles únicamente dentro de Docker por seguridad.
 
 Sin clave se abre automáticamente en modo demo con tres partidos y 45 jornadas de histórico simulado.
 
@@ -117,6 +128,12 @@ GET  /api/v1/admin/data-quality?date=YYYY-MM-DD
 ## Operaciones habituales
 
 ```powershell
+# Uso diario ligero
+.\scripts\start.ps1 -NoBuild
+
+# Modo juego: detiene MatchLab y Docker Desktop, conservando los datos
+.\scripts\stop.ps1 -StopDocker
+
 # Ver logs
 docker compose logs -f api worker web
 
