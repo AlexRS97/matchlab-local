@@ -42,6 +42,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at) || b.competition.priority - a.competition.priority);
   const groups = Map.groupBy(visible, (fixture) => fixture.kickoff_at);
   const formattedDate = new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`));
+  const lastUpdated = data.last_updated_at
+    ? new Intl.DateTimeFormat("es-ES", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "Europe/Madrid",
+      }).format(new Date(data.last_updated_at))
+    : "pendiente";
 
   return (
     <main className="shell">
@@ -62,6 +69,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       </section>
 
       {data.demo_mode && <div className="demo-banner"><b>Modo demostración</b><span>Los datos son simulados. Añade tu API_FOOTBALL_KEY al archivo .env para descargar la cartelera mundial real.</span></div>}
+      <div className={`update-status ${data.automatic_refresh ? "active" : "inactive"}`}>
+        <span>{data.automatic_refresh ? "Actualización automática activa" : "Actualización real pendiente de clave"}</span>
+        <b>Última actualización: {lastUpdated}</b>
+        <small>{data.automatic_refresh ? `Máximo cada ${data.automatic_refresh_hours} horas mientras MatchLab esté abierto` : "Puedes seguir usando el botón Actualizar datos en modo demostración"}</small>
+      </div>
 
       <section className="summary">
         <div><span>Por comenzar</span><strong>{data.total_fixtures}</strong></div>

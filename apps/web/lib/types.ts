@@ -81,5 +81,8 @@ export type DailyAnalysis = {
   high_confidence_fixtures: number;
   recommended_fixtures: number;
   demo_mode: boolean;
+  automatic_refresh: boolean;
+  automatic_refresh_hours: number;
+  last_updated_at: string | null;
   fixtures: Fixture[];
 };

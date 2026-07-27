@@ -272,6 +272,15 @@ def daily_analysis(
     odds = _odds_by_fixture(db, [fixture.id for fixture in fixtures])
     responses = [_fixture_response(fixture, odds.get(fixture.id)) for fixture in fixtures]
     analyzed = [fixture for fixture in responses if fixture.prediction]
+    latest_job = db.scalar(
+        select(IngestionJob)
+        .where(
+            IngestionJob.target_date == target_date,
+            IngestionJob.status == "completed",
+        )
+        .order_by(IngestionJob.finished_at.desc())
+        .limit(1)
+    )
     return DailyAnalysisResponse(
         date=target_date,
         timezone=settings.app_timezone,
@@ -288,6 +297,11 @@ def daily_analysis(
             if fixture.prediction and fixture.prediction.recommendations
         ),
         demo_mode=not bool(settings.api_football_key),
+        automatic_refresh=(
+            settings.enable_scheduled_ingestion and bool(settings.api_football_key)
+        ),
+        automatic_refresh_hours=settings.automatic_refresh_hours,
+        last_updated_at=latest_job.finished_at if latest_job else None,
         fixtures=responses,
     )
 
@@ -440,6 +454,18 @@ def run_ingestion(
 
     target_date = target_date or datetime.now(settings.timezone).date()
     task = ingest_date.delay(target_date.isoformat())
+    return JobQueuedResponse(task_id=task.id)
+
+
+@router.post(
+    "/admin/ingestion/run-if-stale",
+    response_model=JobQueuedResponse,
+    status_code=202,
+)
+def run_ingestion_if_stale() -> JobQueuedResponse:
+    from football_api.worker import ingest_today_if_stale
+
+    task = ingest_today_if_stale.delay()
     return JobQueuedResponse(task_id=task.id)
 
 

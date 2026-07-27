@@ -148,6 +148,15 @@ function Start-MatchLab {
     if (-not (Wait-ForApplication)) {
         throw "Los servicios arrancaron, pero la aplicacion no esta saludable."
     }
+    try {
+        $response = Invoke-RestMethod `
+            -Method Post `
+            -Uri "http://localhost:8000/api/v1/admin/ingestion/run-if-stale" `
+            -TimeoutSec 5
+        Write-ControlLog "Comprobacion automatica encolada: $($response.task_id)"
+    } catch {
+        Write-ControlLog "No se pudo encolar la comprobacion automatica: $($_.Exception.Message)"
+    }
     Write-ControlLog "MatchLab iniciado correctamente."
 }
 

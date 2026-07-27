@@ -106,6 +106,16 @@ if (-not $ApiReady) {
     exit 1
 }
 
+try {
+    Invoke-RestMethod `
+        -Method Post `
+        -Uri "http://localhost:8000/api/v1/admin/ingestion/run-if-stale" `
+        -TimeoutSec 5 | Out-Null
+    Write-Host "Comprobacion automatica de datos iniciada." -ForegroundColor Cyan
+} catch {
+    Write-Host "La comprobacion automatica no pudo iniciarse; puedes usar Actualizar datos." -ForegroundColor Yellow
+}
+
 Write-Host "Aplicacion: http://localhost:3000" -ForegroundColor Green
 Write-Host "API:        http://localhost:8000/docs" -ForegroundColor Green
 & $Docker compose ps

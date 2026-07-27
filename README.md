@@ -10,8 +10,8 @@ confianza: no presenta una predicción como certeza.
 - API REST con FastAPI y documentación OpenAPI.
 - PostgreSQL, migraciones Alembic y almacenamiento de respuestas RAW.
 - API-Football v3 detrás de una interfaz desacoplada.
-- Ingesta mundial incremental con Celery y Redis, iniciada manualmente para no consumir recursos
-  ni cuota mientras juegas.
+- Ingesta mundial incremental con Celery y Redis. Al abrir MatchLab comprueba si los datos están
+  antiguos y, mientras siga abierto, actualiza como máximo una vez cada tres horas.
 - Histórico reciente, standings y estadísticas de córners por equipo.
 - Baseline regularizado de Poisson para goles y binomial negativa para córners.
 - Snapshots point-in-time de features y predicciones versionadas.
@@ -115,14 +115,20 @@ MAX_STATISTICS_CALLS_PER_RUN=120
 MAX_ODDS_CALLS_PER_RUN=40
 API_FOOTBALL_DAILY_CALL_BUDGET=7000
 API_FOOTBALL_QUOTA_RESERVE=5
-ENABLE_SCHEDULED_INGESTION=false
+PREDICTION_REFRESH_HOURS=3
+AUTOMATIC_REFRESH_HOURS=3
+ENABLE_SCHEDULED_INGESTION=true
 ```
 
-`ENABLE_SCHEDULED_INGESTION=false` es el valor recomendado para este PC: solo se actualiza al pulsar
-el botón y nunca arranca con Windows. Las ligas pequeñas y amistosos pueden carecer de córners,
-cuotas o clasificación. En esos casos se omite el mercado correspondiente y se reduce la confianza
-en lugar de inventar valores. Sin una cuota reciente, una señal se etiqueta como **tendencia**, no
-como apuesta de valor.
+La actualización automática solo existe mientras MatchLab está abierto: no inicia Docker ni la
+aplicación con Windows y se detiene completamente con **Detener para jugar**. Antes de consultar al
+proveedor comprueba si ya hubo una actualización en las últimas tres horas; además, las cachés y la
+reserva de cuota evitan repetir llamadas. Las predicciones recientes se reutilizan y únicamente se
+recalculan cuando han envejecido.
+
+Las ligas pequeñas y amistosos pueden carecer de córners, cuotas o clasificación. En esos casos se
+omite el mercado correspondiente y se reduce la confianza en lugar de inventar valores. Sin una
+cuota reciente, una señal se etiqueta como **tendencia**, no como apuesta de valor.
 
 ## Endpoints principales
 

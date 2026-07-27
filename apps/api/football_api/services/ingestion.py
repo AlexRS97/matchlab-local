@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from football_api.config import Settings
-from football_api.models import Competition, Fixture, IngestionJob, RawApiResponse, Team
+from football_api.models import Competition, Fixture, IngestionJob, Prediction, RawApiResponse, Team
 from football_api.services.competition_coverage import (
     competition_priority,
     supports_fixture_statistics,
@@ -51,7 +51,23 @@ class IngestionService:
 
             predictor = PredictionService(self.db)
             generated = 0
+            fixture_ids = [fixture.id for fixture in fixtures]
+            prediction_cutoff = datetime.now(UTC) - timedelta(
+                hours=self.settings.prediction_refresh_hours
+            )
+            recently_predicted = set(
+                self.db.scalars(
+                    select(Prediction.fixture_id)
+                    .where(
+                        Prediction.fixture_id.in_(fixture_ids),
+                        Prediction.generated_at >= prediction_cutoff,
+                    )
+                    .distinct()
+                ).all()
+            )
             for fixture in fixtures:
+                if fixture.id in recently_predicted:
+                    continue
                 predictor.generate_for_fixture(fixture)
                 generated += 1
             self.db.commit()

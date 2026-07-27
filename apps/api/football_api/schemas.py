@@ -92,6 +92,9 @@ class DailyAnalysisResponse(BaseModel):
     high_confidence_fixtures: int
     recommended_fixtures: int
     demo_mode: bool
+    automatic_refresh: bool
+    automatic_refresh_hours: int
+    last_updated_at: datetime | None = None
     fixtures: list[FixtureResponse]
 
 
