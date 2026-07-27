@@ -13,6 +13,6 @@ dist/
 dbt/logs/
 dbt/target/
 dbt/dbt_packages/
+dbt/.user.yml
 *.log
 .DS_Store
-
