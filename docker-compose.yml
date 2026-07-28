@@ -8,15 +8,17 @@ x-logging: &default-logging
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-football_analytics}
       POSTGRES_USER: ${POSTGRES_USER:-football}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-football_local_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     cpus: 0.50
     mem_limit: 384m
+    pids_limit: 128
+    restart: unless-stopped
     logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-football} -d ${POSTGRES_DB:-football_analytics}"]
@@ -25,11 +27,13 @@ services:
       retries: 15
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     volumes:
       - redis_data:/data
     cpus: 0.25
     mem_limit: 128m
+    pids_limit: 64
+    restart: unless-stopped
     logging: *default-logging
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -48,7 +52,13 @@ services:
         condition: service_healthy
     cpus: 0.50
     mem_limit: 384m
+    pids_limit: 128
     init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -59,15 +69,22 @@ services:
       context: .
       dockerfile: infrastructure/docker/api.Dockerfile
     env_file: .env
-    command: uvicorn football_api.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn football_api.main:app --host 0.0.0.0 --port 8000 --no-server-header
     ports:
       - "127.0.0.1:8000:8000"
     cpus: 0.75
     mem_limit: 512m
+    pids_limit: 128
     init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
+    restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -87,10 +104,17 @@ services:
     command: celery -A football_api.worker.celery_app worker --loglevel=INFO --concurrency=2
     cpus: 1.00
     mem_limit: 640m
+    pids_limit: 256
     init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
+    restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -102,13 +126,21 @@ services:
       context: .
       dockerfile: infrastructure/docker/api.Dockerfile
     env_file: .env
-    command: celery -A football_api.worker.celery_app beat --loglevel=INFO
+    # Celery Beat persists its scheduler state; keep that ephemeral write in tmpfs.
+    command: celery -A football_api.worker.celery_app beat --loglevel=INFO --schedule=/tmp/celerybeat-schedule
     cpus: 0.25
     mem_limit: 192m
+    pids_limit: 128
     init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
+    restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -126,10 +158,17 @@ services:
       - "127.0.0.1:3000:3000"
     cpus: 0.50
     mem_limit: 384m
+    pids_limit: 128
     init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
+    restart: unless-stopped
     depends_on:
       api:
         condition: service_healthy
@@ -148,7 +187,7 @@ services:
       DBT_HOST: postgres
       DBT_PORT: 5432
       DBT_USER: ${POSTGRES_USER:-football}
-      DBT_PASSWORD: ${POSTGRES_PASSWORD:-football_local_password}
+      DBT_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
       DBT_DATABASE: ${POSTGRES_DB:-football_analytics}
       DBT_SCHEMA: analytics
     volumes:

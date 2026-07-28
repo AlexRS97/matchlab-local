@@ -1,3 +1,5 @@
+"""Configuración tipada de la aplicación cargada exclusivamente desde el entorno."""
+
 from functools import lru_cache
 from zoneinfo import ZoneInfo
 
@@ -6,12 +8,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Contrato central de configuración compartido por API, workers y scripts."""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
 
     app_env: str = "development"
     app_secret_key: str = "change-me"
     app_timezone: str = "Europe/Madrid"
     app_cors_origins: str = "http://localhost:3000"
+    app_allowed_hosts: str = "localhost,127.0.0.1,api"
     app_demo_mode: bool = True
     app_log_level: str = "INFO"
 
@@ -47,10 +52,18 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.app_cors_origins.split(",") if origin.strip()]
 
     @property
+    def allowed_hosts(self) -> list[str]:
+        """Hosts HTTP válidos; evita que una cabecera Host manipulada alcance la aplicación."""
+
+        return [host.strip() for host in self.app_allowed_hosts.split(",") if host.strip()]
+
+    @property
     def timezone(self) -> ZoneInfo:
         return ZoneInfo(self.app_timezone)
 
 
 @lru_cache
 def get_settings() -> Settings:
+    """Devuelve una única configuración validada por proceso."""
+
     return Settings()

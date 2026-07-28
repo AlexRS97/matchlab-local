@@ -1,3 +1,5 @@
+"""Capa HTTP: consulta servicios, aplica filtros y serializa contratos públicos."""
+
 from dataclasses import asdict
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Annotated

@@ -1,3 +1,5 @@
+"""Traducción conservadora de probabilidades a señales explicables para la interfaz."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,6 +10,8 @@ from football_api.models import Fixture, OddsSnapshot, Prediction
 
 @dataclass(frozen=True)
 class Recommendation:
+    """Señal informativa; solo representa valor cuando existe una cuota verificable."""
+
     market: str
     selection: str
     probability: float
@@ -52,6 +56,7 @@ def build_recommendations(
     prediction: Prediction,
     odds: list[OddsSnapshot],
 ) -> list[Recommendation]:
+    """Ordena mercados y exige ventaja mínima sobre una probabilidad conservadora."""
     if prediction.confidence < 0.55 or prediction.data_quality == "baja":
         return []
 
@@ -164,6 +169,8 @@ def build_recommendations(
 
 
 def build_team_insights(fixture: Fixture, prediction: Prediction) -> list[TeamInsight]:
+    """Resume el perfil de cada equipo sin introducir cálculos nuevos."""
+
     home_avoid = prediction.home_win_probability + prediction.draw_probability
     away_avoid = prediction.away_win_probability + prediction.draw_probability
     return [

@@ -72,8 +72,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not (Test-Path ".env")) {
-    Copy-Item ".env.example" ".env"
-    Write-Host "Se ha creado .env. Puedes anadir API_FOOTBALL_KEY cuando tengas la clave." -ForegroundColor Yellow
+    & (Join-Path $PSScriptRoot "new-env.ps1")
+    Write-Host "Se ha creado .env con secretos locales aleatorios." -ForegroundColor Yellow
+    Write-Host "Puedes anadir API_FOOTBALL_KEY cuando tengas la clave." -ForegroundColor Yellow
 }
 
 if ($NoBuild) {

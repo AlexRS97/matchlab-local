@@ -1,8 +1,11 @@
+"""Punto de entrada ASGI y configuración transversal de la API."""
+
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from football_api.config import get_settings
 from football_api.routes import router
@@ -28,15 +31,37 @@ app = FastAPI(
         "Las predicciones no garantizan resultados ni beneficios."
     ),
     lifespan=lifespan,
+    docs_url=None if settings.app_env == "production" else "/docs",
+    redoc_url=None if settings.app_env == "production" else "/redoc",
+    openapi_url=None if settings.app_env == "production" else "/openapi.json",
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Accept", "Content-Type", "X-Request-ID"],
 )
 app.include_router(router)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next) -> Response:
+    """Añade defensa del navegador sin romper la documentación Swagger de desarrollo."""
+
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.url.path not in {"/docs", "/redoc", "/openapi.json"}:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+        )
+    if request.url.path.startswith("/api/v1/admin"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/health")
@@ -46,4 +71,3 @@ def health() -> dict[str, str | bool]:
         "environment": settings.app_env,
         "demo_mode": not bool(settings.api_football_key),
     }
-

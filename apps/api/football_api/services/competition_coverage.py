@@ -1,3 +1,5 @@
+"""Clasificación estable de competiciones y capacidades declaradas por el proveedor."""
+
 from __future__ import annotations
 
 import unicodedata

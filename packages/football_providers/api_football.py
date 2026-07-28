@@ -1,3 +1,5 @@
+"""Cliente defensivo de API-Football con timeout, reintentos y errores normalizados."""
+
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -23,6 +25,8 @@ class ProviderResponse:
 
 
 class ApiFootballProvider:
+    """Aísla el contrato HTTP externo del dominio y conserva metadatos auditables."""
+
     name = "api_football"
 
     def __init__(self, api_key: str, base_url: str, timeout_seconds: int = 30) -> None:

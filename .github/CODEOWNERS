@@ -1,0 +1,12 @@
+# The repository owner reviews every change by default.
+* @AlexRS97
+
+# Security, automation and legal controls are called out explicitly so future
+# ownership rules cannot accidentally leave them without a reviewer.
+/.github/ @AlexRS97
+/SECURITY.md @AlexRS97
+/LICENSE @AlexRS97
+/NOTICE.md @AlexRS97
+/infrastructure/ @AlexRS97
+/migrations/ @AlexRS97
+/packages/prediction_models/ @AlexRS97

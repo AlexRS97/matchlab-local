@@ -1,3 +1,5 @@
+"""Contratos Pydantic expuestos por la API; no contienen reglas de negocio."""
+
 from datetime import date, datetime
 from typing import Any
 

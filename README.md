@@ -5,6 +5,9 @@ Recupera los partidos de una fecha, construye histórico sin duplicarlo y estima
 resultado, over 2.5, ambos marcan y marcadores probables. Cada análisis incluye calidad de datos y
 confianza: no presenta una predicción como certeza.
 
+> **Repositorio propietario y privado.** El acceso al código no concede derechos de copia,
+> redistribución ni explotación. Consulta [LICENSE](LICENSE) y [NOTICE.md](NOTICE.md).
+
 ## Qué está incluido
 
 - API REST con FastAPI y documentación OpenAPI.
@@ -172,6 +175,9 @@ docker compose run --rm api pytest
 # Validación completa
 .\scripts\check.ps1
 
+# Secretos, dependencias e imágenes
+.\scripts\security-check.ps1
+
 # Ejecutar dbt y sus tests
 docker compose --profile analytics run --rm dbt build --profiles-dir .
 
@@ -213,3 +219,21 @@ scripts                  arranque y comprobaciones para Windows
 tests                    pruebas unitarias
 docs                     decisiones de arquitectura
 ```
+
+## Seguridad, propiedad y desarrollo
+
+- [Política de seguridad y comunicación responsable](SECURITY.md)
+- [Arquitectura de seguridad y requisitos previos a Internet](docs/security-architecture.md)
+- [Guía técnica de desarrollo y criterio de comentarios](docs/development.md)
+- [Protección de propiedad intelectual](docs/intellectual-property.md)
+- [Arquitectura de datos y predicción](docs/architecture.md)
+- [Política de contribuciones](CONTRIBUTING.md)
+
+Los nuevos entornos se crean con `scripts/new-env.ps1`, que genera secretos locales mediante un
+generador criptográfico y nunca los muestra en pantalla. El repositorio excluye `.env`, claves,
+certificados, copias de seguridad, bases locales e informes de seguridad.
+
+GitHub ejecuta en cada cambio pruebas de backend, comprobación de tipos, compilación web,
+construcción de contenedores, Gitleaks sobre el historial y auditorías de dependencias. Las acciones
+externas y las imágenes sensibles se fijan por SHA o digest inmutable para reducir ataques a la
+cadena de suministro.

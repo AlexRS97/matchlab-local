@@ -1,3 +1,5 @@
+"""Modelo relacional transaccional y restricciones de integridad de MatchLab."""
+
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -222,4 +224,3 @@ class IngestionJob(Base):
     predictions_generated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     message: Mapped[str | None] = mapped_column(Text)
     error_detail: Mapped[str | None] = mapped_column(Text)
-

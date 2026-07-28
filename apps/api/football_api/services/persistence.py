@@ -1,3 +1,5 @@
+"""Operaciones idempotentes que traducen respuestas externas al modelo relacional."""
+
 import hashlib
 import json
 from contextlib import suppress

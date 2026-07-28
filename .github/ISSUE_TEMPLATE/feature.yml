@@ -1,0 +1,26 @@
+name: Mejora
+description: Propón una mejora de producto o arquitectura.
+title: "[Mejora] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: Describe la necesidad sin presuponer una solución.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: Explica alcance, alternativas y resultado esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Riesgos
+      description: Seguridad, privacidad, costes, rendimiento, datos y mantenimiento.
+    validations:
+      required: true

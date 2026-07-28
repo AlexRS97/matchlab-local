@@ -1,0 +1,42 @@
+name: Error
+description: Documenta un comportamiento reproducible sin incluir información sensible.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: No adjuntes claves, archivos `.env`, datos personales ni respuestas privadas de APIs.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Comportamiento observado
+      description: Explica qué ocurre y cuál era el comportamiento esperado.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproducción
+      description: Pasos mínimos, deterministas y sin secretos.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión o commit
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Impacto
+      options:
+        - Bajo
+        - Medio
+        - Alto
+        - Crítico o de seguridad
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: Si has elegido impacto de seguridad, no continúes aquí; usa el reporte privado indicado en SECURITY.md.

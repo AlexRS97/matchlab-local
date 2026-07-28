@@ -1,3 +1,5 @@
+"""Dataset sintético determinista para desarrollar sin consumir la API externa."""
+
 import random
 from datetime import UTC, date, datetime, time, timedelta
 
@@ -145,4 +147,3 @@ def seed_demo_data(db: Session, target_date: date, timezone) -> list[Fixture]:
             )
     db.commit()
     return fixtures_today
-

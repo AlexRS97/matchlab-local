@@ -1,3 +1,5 @@
+"""Orquestación incremental del proveedor con presupuestos, caché e idempotencia."""
+
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
@@ -26,6 +28,8 @@ from football_providers import ApiFootballProvider
 
 
 class IngestionService:
+    """Coordina una ejecución completa sin filtrar detalles HTTP a otras capas."""
+
     def __init__(self, db: Session, settings: Settings) -> None:
         self.db = db
         self.settings = settings

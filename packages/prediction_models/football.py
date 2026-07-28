@@ -1,9 +1,17 @@
+"""Modelos matemáticos puros para goles, córners y mercados derivados.
+
+Este módulo no accede a red ni base de datos. Mantenerlo determinista permite
+reproducir una predicción histórica a partir de sus parámetros almacenados.
+"""
+
 import math
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class PredictionResult:
+    """Salida estable del modelo base utilizada como contrato entre capas."""
+
     home_expected_goals: float
     away_expected_goals: float
     home_expected_corners: float | None
@@ -20,6 +28,8 @@ class PredictionResult:
 
 @dataclass(frozen=True)
 class AdvancedAnalysis:
+    """Métricas derivadas que no necesitan persistirse ni duplicar estado."""
+
     market_probabilities: list[dict[str, float | str]]
     score_matrix: list[dict[str, float | int]]
     goal_bands: list[dict[str, float | str]]
@@ -55,6 +65,7 @@ def build_prediction(
     away_expected_corners: float | None,
     max_goals: int = 8,
 ) -> PredictionResult:
+    """Calcula distribuciones de goles y córners desde intensidades regularizadas."""
     home_expected_goals = max(0.15, min(home_expected_goals, 4.5))
     away_expected_goals = max(0.15, min(away_expected_goals, 4.5))
     score_probabilities: list[tuple[str, float]] = []
@@ -148,6 +159,7 @@ def build_advanced_analysis(
     *,
     max_goals: int = 10,
 ) -> AdvancedAnalysis:
+    """Deriva mercados, incertidumbre y matriz de marcadores desde el modelo base."""
     """Derive explainable markets and visualisation data from the stored goal rates.
 
     This intentionally remains a pure calculation. It can therefore enrich old predictions

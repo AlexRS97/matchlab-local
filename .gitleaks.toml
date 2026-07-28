@@ -1,0 +1,13 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Local and generated paths that are intentionally outside version control"
+paths = [
+  '''(^|/)\.env$''',
+  '''(^|/)\.git/''',
+  '''(^|/)\.next/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)(\.pytest_cache|\.ruff_cache|\.mypy_cache)/''',
+  '''(^|/)(dbt/logs|dbt/target)/''',
+]

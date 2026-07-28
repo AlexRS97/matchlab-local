@@ -38,10 +38,15 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $Docker compose build api migrate worker beat web
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-& $Docker compose run --rm api ruff check apps/api packages migrations tests
+& $Docker compose run --rm -e RUFF_CACHE_DIR=/tmp/ruff api `
+    ruff check apps/api packages migrations tests
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-& $Docker compose run --rm api pytest
+& $Docker compose run --rm -e MYPY_CACHE_DIR=/tmp/mypy api `
+    mypy apps/api packages
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "Scripts, configuracion, compilacion, lint y tests completados." -ForegroundColor Green
+& $Docker compose run --rm api pytest -p no:cacheprovider
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Host "Scripts, configuracion, compilacion, lint, tipos y tests completados." -ForegroundColor Green

@@ -1,3 +1,5 @@
+"""Tareas Celery y política de actualización periódica mientras MatchLab está activo."""
+
 from datetime import UTC, date, datetime, timedelta
 
 from celery import Celery

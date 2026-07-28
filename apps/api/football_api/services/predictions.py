@@ -1,3 +1,5 @@
+"""Construcción point-in-time de features y persistencia versionada de predicciones."""
+
 import math
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -32,6 +34,8 @@ def _shrink(value: float, sample_size: int, prior: float, strength: float = 6.0)
 
 
 class PredictionService:
+    """Impide fuga temporal y regulariza muestras pequeñas antes de predecir."""
+
     def __init__(self, db: Session) -> None:
         self.db = db
 
