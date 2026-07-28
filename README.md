@@ -25,6 +25,8 @@ confianza: no presenta una predicción como certeza.
 - Snapshots point-in-time de features y predicciones versionadas.
 - Web Next.js responsive con identidad visual propia, navegación accesible, filtros claros,
   cartelera diaria y análisis detallado optimizado para escritorio y móvil.
+- Filtros rápidos, guía de lectura, navegación interna y estados visuales de carga, error y página
+  inexistente para que el modo demo y los datos reales compartan la misma experiencia.
 - Proyecto dbt con staging, forma rolling y mart diario.
 - Modo demo, pruebas unitarias, Docker Compose y scripts para Windows.
 - Captura de cuotas, detección separada de valor esperado y tendencias, rendimiento y calidad.

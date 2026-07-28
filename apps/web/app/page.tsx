@@ -24,6 +24,15 @@ type Search = {
   q?: string;
 };
 
+function signalHref(selectedDate: string, params: Search, signal: string) {
+  const query = new URLSearchParams({ date: selectedDate });
+  if (params.q) query.set("q", params.q);
+  if (params.region && params.region !== "Todas") query.set("region", params.region);
+  if (params.quality && params.quality !== "Todas") query.set("quality", params.quality);
+  if (signal !== "Todas") query.set("signal", signal);
+  return `/?${query.toString()}#partidos`;
+}
+
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
   const selectedDate = params.date ?? madridToday();
@@ -81,6 +90,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         timeZone: "Europe/Madrid",
       }).format(new Date(data.last_updated_at))
     : "pendiente";
+  const selectedSignal = params.signal ?? "Todas";
+  const filtersActive = Boolean(
+    params.q ||
+    (params.region && params.region !== "Todas") ||
+    (params.quality && params.quality !== "Todas") ||
+    (params.signal && params.signal !== "Todas"),
+  );
 
   return (
     <main className="shell">
@@ -118,7 +134,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <small>{data.automatic_refresh ? `Actualización completa cada ${data.automatic_refresh_minutes} minutos mientras MatchLab esté abierto` : `Configurada cada ${data.automatic_refresh_minutes} minutos; se activará al añadir la clave real`}</small>
       </div>
 
-      <section className="summary">
+      <section className="summary" id="resumen">
         <div><span>Por comenzar</span><strong>{data.total_fixtures}</strong></div>
         <div><span>Analizados</span><strong>{data.analyzed_fixtures}</strong></div>
         <div><span>Con señal</span><strong>{data.recommended_fixtures}</strong></div>
@@ -153,6 +169,44 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         )}
       </section>
 
+      {data.demo_mode && (
+        <section className="data-readiness">
+          <div className="readiness-copy">
+            <p className="eyebrow">PREPARADO PARA DATOS REALES</p>
+            <h2>El sistema ya está listo para la clave.</h2>
+            <p>Mientras llega, puedes recorrer toda la experiencia con datos de demostración. Al añadirla no cambiará la forma de usar MatchLab: solo se sustituirá la fuente simulada por la cartelera real.</p>
+          </div>
+          <div className="readiness-steps" aria-label="Estado de preparación">
+            <div className="complete"><span>1</span><p><b>Interfaz</b><small>Lista y responsive</small></p></div>
+            <div className="complete"><span>2</span><p><b>Modelos</b><small>Probados y versionados</small></p></div>
+            <div className="pending"><span>3</span><p><b>API key</b><small>Pendiente de conectar</small></p></div>
+          </div>
+        </section>
+      )}
+
+      <div className="match-tools">
+        <div>
+          <p className="eyebrow">ENCUENTRA LO IMPORTANTE</p>
+          <h2>Explora la jornada</h2>
+        </div>
+        <div className="quick-filters" aria-label="Filtros rápidos de señal">
+          {[
+            ["Todas", "Todos"],
+            ["Con señal", "Con señal"],
+            ["Valor", "Valor"],
+            ["Alta confianza", "Alta confianza"],
+          ].map(([value, label]) => (
+            <Link
+              key={value}
+              href={signalHref(selectedDate, params, value)}
+              className={selectedSignal === value ? "active" : ""}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <form className="filters" aria-label="Filtros de partidos">
         <input type="hidden" name="date" value={selectedDate} />
         <label className="filter-field search-field">
@@ -183,8 +237,23 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
             <option value="Alta confianza">Alta confianza</option>
           </select>
         </label>
-        <button type="submit">Aplicar filtros</button>
+        <div className="filter-actions">
+          <button type="submit">Aplicar filtros</button>
+          {filtersActive && <Link href={`/?date=${selectedDate}#partidos`}>Limpiar</Link>}
+        </div>
       </form>
+
+      <details className="reading-guide">
+        <summary>
+          <span>¿Cómo se lee una tarjeta?</span>
+          <small>Guía rápida de probabilidades y señales</small>
+        </summary>
+        <div className="reading-guide-grid">
+          <div><i className="guide-icon outcomes">1X2</i><p><b>Probabilidad de resultado</b><span>1 es local, X empate y 2 visitante. La barra permite comparar el reparto de un vistazo.</span></p></div>
+          <div><i className="guide-icon quality-guide">A</i><p><b>Calidad de datos</b><span>Mide cobertura y muestra disponible. No significa probabilidad de acertar.</span></p></div>
+          <div><i className="guide-icon value-guide">V</i><p><b>Valor y tendencia</b><span>Solo hay valor con cuota real y ventaja suficiente; sin cuota se muestra una tendencia.</span></p></div>
+        </div>
+      </details>
 
       <section className="matches-section" id="partidos">
         <div className="section-title"><div><p className="eyebrow">{data.timezone}</p><h2>Horario de próximos partidos</h2></div><span>{visible.length} de {data.total_fixtures} encuentros</span></div>

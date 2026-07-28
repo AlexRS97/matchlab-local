@@ -20,6 +20,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </span>
           </Link>
           <nav className="top-actions" aria-label="Navegación principal">
+            <Link href="/#resumen" className="top-link">Resumen</Link>
             <Link href="/#partidos" className="top-link">Partidos</Link>
             <div className="model-pill"><span /> Modelo activo</div>
           </nav>

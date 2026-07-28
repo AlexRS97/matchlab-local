@@ -94,7 +94,10 @@ export default async function FixturePage({
     <main className="shell detail-shell">
       <div className="detail-nav">
         <Link href="/#partidos" className="back"><span aria-hidden="true">←</span> Todos los partidos</Link>
-        <span className="detail-nav-status"><i /> Análisis actualizado</span>
+        <div className="detail-nav-badges">
+          {fixture.provider_id < 0 && <span className="demo-detail-pill">Datos demo</span>}
+          <span className="detail-nav-status"><i /> Análisis actualizado</span>
+        </div>
       </div>
       <div className="detail-kicker">
         {fixture.competition.region} · {fixture.competition.country} · {fixture.competition.name}
@@ -150,7 +153,15 @@ export default async function FixturePage({
         </div>
       </section>
 
-      <section className="outcome-section">
+      <nav className="analysis-nav" aria-label="Secciones del análisis">
+        <a href="#resultado">Resultado</a>
+        <a href="#recomendaciones">Recomendaciones</a>
+        <a href="#modelos">Goles y córners</a>
+        <a href="#mercados">Mercados</a>
+        <a href="#marcadores">Marcadores</a>
+      </nav>
+
+      <section className="outcome-section" id="resultado">
         <div className="section-title compact">
           <div><p className="eyebrow">DISTRIBUCIÓN 1X2</p><h2>Cómo se reparte el partido</h2></div>
           <span>La anchura representa probabilidad</span>
@@ -169,7 +180,7 @@ export default async function FixturePage({
       </section>
 
       {p.recommendations.length > 0 ? (
-        <section className="recommendations">
+        <section className="recommendations" id="recomendaciones">
           <div className="section-title">
             <div><p className="eyebrow">SEÑALES DEL MODELO</p><h2>Recomendaciones</h2></div>
             <span>No garantizan beneficio</span>
@@ -200,7 +211,7 @@ export default async function FixturePage({
         </div>
       )}
 
-      <div className="detail-grid">
+      <div className="detail-grid" id="modelos">
         <section className="analysis-panel accent-panel">
           <p className="eyebrow">MODELO DE GOLES</p>
           <h2>{p.total_expected_goals.toFixed(2)}</h2>
@@ -238,7 +249,7 @@ export default async function FixturePage({
         </div>
       </section>
 
-      <section className="market-explorer">
+      <section className="market-explorer" id="mercados">
         <div className="section-title">
           <div><p className="eyebrow">CUOTAS JUSTAS SIN MARGEN</p><h2>Explorador de mercados</h2></div>
           <span>Referencia matemática, no cuota recomendada</span>
@@ -256,7 +267,7 @@ export default async function FixturePage({
         </div>
       </section>
 
-      <div className="visual-grid">
+      <div className="visual-grid" id="marcadores">
         <section className="score-heatmap">
           <div>
             <p className="eyebrow">MATRIZ DE MARCADORES</p>
