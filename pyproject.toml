@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "football-analytics-platform"
 version = "0.1.0"
 description = "Plataforma local y escalable de analisis estadistico de futbol"
+authors = [{ name = "Alejandro Rios Silva" }]
 requires-python = ">=3.12"
 dependencies = [
   "alembic==1.18.5",

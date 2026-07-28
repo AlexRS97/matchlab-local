@@ -35,6 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div>
             <strong>MatchLab</strong>
             <span>Análisis probabilístico para tomar decisiones mejor informadas.</span>
+            <small>© 2026 Alejandro Rios Silva. Todos los derechos reservados.</small>
           </div>
           <p>Las probabilidades no son certezas. Valida el modelo y apuesta siempre con responsabilidad.</p>
         </footer>

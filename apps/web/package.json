@@ -2,6 +2,8 @@
   "name": "football-analytics-web",
   "version": "0.1.0",
   "private": true,
+  "author": "Alejandro Rios Silva",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

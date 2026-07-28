@@ -1,9 +1,9 @@
 # Aviso de propiedad y atribuciones
 
 MatchLab y su código original, arquitectura, documentación, modelos de dominio, cálculos,
-experiencia visual y materiales asociados son propiedad de Alex.
+experiencia visual y materiales asociados son propiedad de Alejandro Rios Silva.
 
-Copyright © 2026 Alex. Todos los derechos reservados.
+Copyright © 2026 Alejandro Rios Silva. Todos los derechos reservados.
 
 El acceso a este repositorio no concede permiso para copiar, redistribuir, comercializar,
 modificar, crear obras derivadas, aplicar ingeniería inversa ni reutilizar componentes fuera de

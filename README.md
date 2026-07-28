@@ -244,3 +244,5 @@ GitHub ejecuta en cada cambio pruebas de backend, comprobación de tipos, compil
 construcción de contenedores, Gitleaks sobre el historial y auditorías de dependencias. Las acciones
 externas y las imágenes sensibles se fijan por SHA o digest inmutable para reducir ataques a la
 cadena de suministro.
+
+Copyright © 2026 Alejandro Rios Silva. Todos los derechos reservados.
