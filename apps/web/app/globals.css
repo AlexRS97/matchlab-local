@@ -1207,7 +1207,7 @@ footer p {
   .hero h1 {
     max-width: 100%;
     overflow-wrap: anywhere;
-    font-size: clamp(38px, 12vw, 52px);
+    font-size: clamp(36px, 10vw, 46px);
     letter-spacing: -2.5px;
   }
 
@@ -1632,6 +1632,23 @@ footer p {
 
 .future-coverage p {
   color: #587086;
+}
+
+.supporting-intelligence {
+  margin: 88px 0 34px;
+  padding-top: 34px;
+  border-top: 1px solid #d6e4ef;
+}
+
+.supporting-readiness {
+  margin: 0 0 20px;
+}
+
+@media (max-width: 620px) {
+  .supporting-intelligence {
+    margin-top: 64px;
+    padding-top: 28px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2503,6 +2520,14 @@ footer p {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+}
+
+.hot-grid-1 {
+  grid-template-columns: minmax(0, 520px);
+}
+
+.hot-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .hot-card {

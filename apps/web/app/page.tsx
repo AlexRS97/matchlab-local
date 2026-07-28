@@ -112,8 +112,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     );
   }
 
+  const now = Date.now();
+  const upcomingFixtures = data.fixtures.filter((fixture) => {
+    const kickoff = new Date(fixture.kickoff_at).getTime();
+    return (
+      Number.isFinite(kickoff) &&
+      kickoff > now &&
+      (fixture.status === "NS" || fixture.status === "TBD")
+    );
+  });
   const query = (params.q ?? "").trim().toLocaleLowerCase("es");
-  const visible = data.fixtures
+  const visible = upcomingFixtures
     .filter((fixture) => !params.region || params.region === "Todas" || fixture.competition.region === params.region)
     .filter((fixture) => !params.quality || params.quality === "Todas" || fixture.prediction?.data_quality === params.quality)
     .filter((fixture) => {
@@ -124,9 +133,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       return true;
     })
     .filter((fixture) => !query || `${fixture.home_team.name} ${fixture.away_team.name} ${fixture.competition.name} ${fixture.competition.country}`.toLocaleLowerCase("es").includes(query))
-    .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at) || b.competition.priority - a.competition.priority);
+    .sort(
+      (a, b) =>
+        new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime() ||
+        b.competition.priority - a.competition.priority,
+    );
   const groups = Map.groupBy(visible, (fixture) => fixture.kickoff_at);
-  const analyzed = data.fixtures.filter((fixture) => fixture.prediction);
+  const analyzed = upcomingFixtures.filter((fixture) => fixture.prediction);
   const averageGoals = analyzed.length
     ? analyzed.reduce((total, fixture) => total + (fixture.prediction?.total_expected_goals ?? 0), 0) / analyzed.length
     : 0;
@@ -135,7 +148,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     : 0;
   const openGames = analyzed.filter((fixture) => (fixture.prediction?.over_2_5_probability ?? 0) >= 0.6).length;
   const bttsGames = analyzed.filter((fixture) => (fixture.prediction?.btts_probability ?? 0) >= 0.6).length;
-  const hotMatches = buildHotMatches(data.fixtures);
+  const hotMatches = buildHotMatches(upcomingFixtures);
+  const recommendedFixtures = analyzed.filter(
+    (fixture) => fixture.prediction?.recommendations.length,
+  ).length;
   const formattedDate = new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`));
   const lastUpdated = data.last_updated_at
     ? new Intl.DateTimeFormat("es-ES", {
@@ -189,23 +205,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       </div>
 
       <section className="summary" id="resumen">
-        <div><span>Por comenzar</span><strong>{data.total_fixtures}</strong></div>
-        <div><span>Analizados</span><strong>{data.analyzed_fixtures}</strong></div>
-        <div><span>Con señal</span><strong>{data.recommended_fixtures}</strong></div>
+        <div><span>Por comenzar</span><strong>{upcomingFixtures.length}</strong></div>
+        <div><span>Analizados</span><strong>{analyzed.length}</strong></div>
+        <div><span>Con señal</span><strong>{recommendedFixtures}</strong></div>
         <div><span>Fecha</span><strong className="date-stat">{formattedDate}</strong></div>
-      </section>
-
-      <section className="daily-intelligence">
-        <div className="section-title">
-          <div><p className="eyebrow">LECTURA RÁPIDA</p><h2>Radiografía de la jornada</h2></div>
-          <span>Calculada sobre {analyzed.length} partidos analizados</span>
-        </div>
-        <div className="pulse-grid">
-          <article><span>Media de goles esperados</span><strong>{averageGoals.toFixed(2)}</strong><small>por partido</small></article>
-          <article><span>Confianza media</span><strong>{Math.round(averageConfidence * 100)}%</strong><small>cobertura del modelo</small></article>
-          <article><span>Partidos abiertos</span><strong>{openGames}</strong><small>≥ 60% de más de 2,5</small></article>
-          <article><span>Ambos marcan</span><strong>{bttsGames}</strong><small>≥ 60% de probabilidad</small></article>
-        </div>
       </section>
 
       {hotMatches.length > 0 && (
@@ -225,7 +228,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
               <span>Ranking comparativo, no garantía de acierto</span>
             </div>
           </div>
-          <div className="hot-grid">
+          <div className={`hot-grid hot-grid-${hotMatches.length}`}>
             {hotMatches.map(({ fixture, recommendation, score, reliableProbability }, index) => (
               <Link href={`/partidos/${fixture.id}`} className="hot-card" key={fixture.id}>
                 <div className="hot-card-top">
@@ -255,21 +258,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 </div>
               </Link>
             ))}
-          </div>
-        </section>
-      )}
-
-      {data.demo_mode && (
-        <section className="data-readiness">
-          <div className="readiness-copy">
-            <p className="eyebrow">PREPARADO PARA DATOS REALES</p>
-            <h2>El sistema ya está listo para la clave.</h2>
-            <p>Mientras llega, puedes recorrer toda la experiencia con datos de demostración. Al añadirla no cambiará la forma de usar MatchLab: solo se sustituirá la fuente simulada por la cartelera real.</p>
-          </div>
-          <div className="readiness-steps" aria-label="Estado de preparación">
-            <div className="complete"><span>1</span><p><b>Interfaz</b><small>Lista y responsive</small></p></div>
-            <div className="complete"><span>2</span><p><b>Modelos</b><small>Probados y versionados</small></p></div>
-            <div className="pending"><span>3</span><p><b>API key</b><small>Pendiente de conectar</small></p></div>
           </div>
         </section>
       )}
@@ -346,11 +334,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       </details>
 
       <section className="matches-section" id="partidos">
-        <div className="section-title"><div><p className="eyebrow">{data.timezone}</p><h2>Horario de próximos partidos</h2></div><span>{visible.length} de {data.total_fixtures} encuentros</span></div>
+        <div className="section-title">
+          <div>
+            <p className="eyebrow">{data.timezone} · MÁS CERCANOS PRIMERO</p>
+            <h2>Todos los próximos partidos</h2>
+          </div>
+          <span>{visible.length} de {upcomingFixtures.length} encuentros</span>
+        </div>
         {visible.length === 0 && (
           <div className="empty">
-            <h3>{data.total_fixtures === 0 ? "No quedan partidos por comenzar." : "Ningún partido coincide con los filtros."}</h3>
-            <p>{data.total_fixtures === 0 ? "Elige mañana o pulsa Actualizar datos." : "Amplía la región, la calidad o la búsqueda."}</p>
+            <h3>{upcomingFixtures.length === 0 ? "No quedan partidos por comenzar." : "Ningún partido coincide con los filtros."}</h3>
+            <p>{upcomingFixtures.length === 0 ? "Elige mañana o pulsa Actualizar datos." : "Amplía la región, la calidad o la búsqueda."}</p>
           </div>
         )}
         {[...groups.entries()].map(([kickoff, fixtures], index) => (
@@ -364,6 +358,34 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           </div>
         ))}
       </section>
+
+      <section className="daily-intelligence supporting-intelligence">
+        <div className="section-title">
+          <div><p className="eyebrow">RESUMEN DE LA CARTELERA</p><h2>Radiografía de la jornada</h2></div>
+          <span>Calculada sobre {analyzed.length} partidos por comenzar</span>
+        </div>
+        <div className="pulse-grid">
+          <article><span>Media de goles esperados</span><strong>{averageGoals.toFixed(2)}</strong><small>por partido</small></article>
+          <article><span>Confianza media</span><strong>{Math.round(averageConfidence * 100)}%</strong><small>cobertura del modelo</small></article>
+          <article><span>Partidos abiertos</span><strong>{openGames}</strong><small>≥ 60% de más de 2,5</small></article>
+          <article><span>Ambos marcan</span><strong>{bttsGames}</strong><small>≥ 60% de probabilidad</small></article>
+        </div>
+      </section>
+
+      {data.demo_mode && (
+        <section className="data-readiness supporting-readiness">
+          <div className="readiness-copy">
+            <p className="eyebrow">PREPARADO PARA DATOS REALES</p>
+            <h2>El sistema ya está listo para la clave.</h2>
+            <p>Mientras llega, puedes recorrer toda la experiencia con datos de demostración. Al añadirla no cambiará la forma de usar MatchLab: solo se sustituirá la fuente simulada por la cartelera real.</p>
+          </div>
+          <div className="readiness-steps" aria-label="Estado de preparación">
+            <div className="complete"><span>1</span><p><b>Interfaz</b><small>Lista y responsive</small></p></div>
+            <div className="complete"><span>2</span><p><b>Modelos</b><small>Probados y versionados</small></p></div>
+            <div className="pending"><span>3</span><p><b>API key</b><small>Pendiente de conectar</small></p></div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
