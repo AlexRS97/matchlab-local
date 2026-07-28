@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   title: "MatchLab — Análisis de fútbol",
   description: "Predicciones probabilísticas de goles y córners con trazabilidad de datos.",
   icons: {
-    icon: "/mark.svg",
-    shortcut: "/mark.svg",
-    apple: "/mark.svg",
+    icon: "/matchlab-logo.png",
+    shortcut: "/matchlab-logo.png",
+    apple: "/matchlab-logo.png",
   },
 };
 
@@ -18,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <header className="topbar">
           <Link href="/" className="brand">
-            <img src="/mark.svg" alt="" width="40" height="40" />
+            <img src="/matchlab-logo.png" alt="" width="40" height="40" />
             <span className="brand-copy">
               <b>MatchLab</b>
               <small>Football intelligence</small>

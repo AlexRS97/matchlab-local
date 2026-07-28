@@ -1443,6 +1443,7 @@ footer p {
 
 /* MatchLab blue identity: every former green accent maps to the blue system. */
 .brand img {
+  border-radius: 10px;
   filter: drop-shadow(0 6px 12px rgba(47, 111, 237, .22));
 }
 
