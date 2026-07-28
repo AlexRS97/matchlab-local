@@ -86,21 +86,32 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     <main className="shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">CENTRO MUNDIAL DE ANÁLISIS</p>
-          <h1>Próximos partidos,<br /><em>en orden de inicio.</em></h1>
-          <p className="hero-copy">La cartelera empieza por el encuentro más cercano. Los partidos cuyo inicio ya ha pasado se retiran, y cada tarjeta resume predicción, confianza y mejor recomendación.</p>
+          <p className="eyebrow"><span className="eyebrow-dot" /> CENTRO MUNDIAL DE ANÁLISIS</p>
+          <h1>Entiende el partido<br /><em>antes de que empiece.</em></h1>
+          <p className="hero-copy">Partidos en orden de inicio, probabilidades fáciles de comparar y señales explicadas. Todo lo importante de la jornada, sin ruido.</p>
+          <div className="hero-points" aria-label="Características principales">
+            <span>26 mercados</span>
+            <span>Cuotas justas</span>
+            <span>Actualización continua</span>
+          </div>
         </div>
         <div className="date-panel">
-          <label htmlFor="date">Jornada analizada</label>
+          <div className="date-panel-head">
+            <span className="calendar-icon" aria-hidden="true">◫</span>
+            <div>
+              <label htmlFor="date">Jornada analizada</label>
+              <small>Elige el día que quieres estudiar</small>
+            </div>
+          </div>
           <form>
             <input id="date" name="date" type="date" defaultValue={selectedDate} />
-            <button type="submit">Ver fecha</button>
+            <button type="submit">Ver jornada <span aria-hidden="true">→</span></button>
           </form>
           <RefreshButton date={selectedDate} />
         </div>
       </section>
 
-      {data.demo_mode && <div className="demo-banner"><b>Modo demostración</b><span>Los datos son simulados. Añade tu API_FOOTBALL_KEY al archivo .env para descargar la cartelera mundial real.</span></div>}
+      {data.demo_mode && <div className="demo-banner"><span className="banner-icon" aria-hidden="true">D</span><div><b>Modo demostración</b><span>Los datos son simulados. Añade tu API_FOOTBALL_KEY al archivo .env para descargar la cartelera mundial real.</span></div></div>}
       <div className={`update-status ${data.automatic_refresh ? "active" : "inactive"}`}>
         <span>{data.automatic_refresh ? "Actualización automática activa" : "Actualización real pendiente de clave"}</span>
         <b>Última actualización: {lastUpdated}</b>
@@ -142,28 +153,40 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         )}
       </section>
 
-      <form className="filters">
+      <form className="filters" aria-label="Filtros de partidos">
         <input type="hidden" name="date" value={selectedDate} />
-        <input name="q" defaultValue={params.q} placeholder="Equipo o competición" />
-        <select name="region" defaultValue={params.region ?? "Todas"}>
-          {["Todas", "Europa", "América", "Asia", "África", "Mundo", "Otros"].map((region) => <option key={region}>{region}</option>)}
-        </select>
-        <select name="quality" defaultValue={params.quality ?? "Todas"}>
-          <option value="Todas">Cualquier calidad</option>
-          <option value="alta">Calidad alta</option>
-          <option value="media">Calidad media</option>
-          <option value="baja">Calidad baja</option>
-        </select>
-        <select name="signal" defaultValue={params.signal ?? "Todas"}>
-          <option value="Todas">Todas las señales</option>
-          <option value="Con señal">Con recomendación</option>
-          <option value="Valor">Solo valor detectado</option>
-          <option value="Alta confianza">Alta confianza</option>
-        </select>
-        <button type="submit">Filtrar</button>
+        <label className="filter-field search-field">
+          <span>Buscar</span>
+          <input name="q" defaultValue={params.q} placeholder="Equipo o competición" />
+        </label>
+        <label className="filter-field">
+          <span>Región</span>
+          <select name="region" defaultValue={params.region ?? "Todas"}>
+            {["Todas", "Europa", "América", "Asia", "África", "Mundo", "Otros"].map((region) => <option key={region}>{region}</option>)}
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Datos</span>
+          <select name="quality" defaultValue={params.quality ?? "Todas"}>
+            <option value="Todas">Cualquier calidad</option>
+            <option value="alta">Calidad alta</option>
+            <option value="media">Calidad media</option>
+            <option value="baja">Calidad baja</option>
+          </select>
+        </label>
+        <label className="filter-field">
+          <span>Señal</span>
+          <select name="signal" defaultValue={params.signal ?? "Todas"}>
+            <option value="Todas">Todas las señales</option>
+            <option value="Con señal">Con recomendación</option>
+            <option value="Valor">Solo valor detectado</option>
+            <option value="Alta confianza">Alta confianza</option>
+          </select>
+        </label>
+        <button type="submit">Aplicar filtros</button>
       </form>
 
-      <section className="matches-section">
+      <section className="matches-section" id="partidos">
         <div className="section-title"><div><p className="eyebrow">{data.timezone}</p><h2>Horario de próximos partidos</h2></div><span>{visible.length} de {data.total_fixtures} encuentros</span></div>
         {visible.length === 0 && (
           <div className="empty">

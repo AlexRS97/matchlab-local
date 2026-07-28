@@ -29,6 +29,12 @@ const marketOrder = [
   "Córners totales",
 ];
 
+function DetailTeamLogo({ name, url }: { name: string; url: string | null }) {
+  return url
+    ? <img src={url} alt="" className="scoreboard-logo" />
+    : <span className="scoreboard-fallback">{name[0]}</span>;
+}
+
 function MarketGroup({
   name,
   markets,
@@ -86,13 +92,21 @@ export default async function FixturePage({
 
   return (
     <main className="shell detail-shell">
-      <Link href="/" className="back">← Volver a todos los partidos</Link>
+      <div className="detail-nav">
+        <Link href="/#partidos" className="back"><span aria-hidden="true">←</span> Todos los partidos</Link>
+        <span className="detail-nav-status"><i /> Análisis actualizado</span>
+      </div>
       <div className="detail-kicker">
         {fixture.competition.region} · {fixture.competition.country} · {fixture.competition.name}
       </div>
       <section className="scoreboard">
-        <div><span>LOCAL</span><h1>{fixture.home_team.name}</h1></div>
+        <div className="scoreboard-team">
+          <DetailTeamLogo name={fixture.home_team.name} url={fixture.home_team.logo_url} />
+          <span>LOCAL</span>
+          <h1>{fixture.home_team.name}</h1>
+        </div>
         <div className="kickoff">
+          <strong className="versus-badge">VS</strong>
           <b>
             {new Intl.DateTimeFormat("es-ES", {
               dateStyle: "medium",
@@ -102,7 +116,11 @@ export default async function FixturePage({
           </b>
           <span>{fixture.venue_name ?? "Sede por confirmar"}</span>
         </div>
-        <div className="right"><span>VISITANTE</span><h1>{fixture.away_team.name}</h1></div>
+        <div className="scoreboard-team right">
+          <DetailTeamLogo name={fixture.away_team.name} url={fixture.away_team.logo_url} />
+          <span>VISITANTE</span>
+          <h1>{fixture.away_team.name}</h1>
+        </div>
       </section>
 
       <section className="match-profile">
@@ -110,21 +128,25 @@ export default async function FixturePage({
           <span>Resultado más probable</span>
           <strong>{favoriteName}</strong>
           <small>{pct(p.favorite_probability)} de probabilidad</small>
+          <i style={{ "--value": pct(p.favorite_probability) } as React.CSSProperties} />
         </div>
         <div>
           <span>Claridad del pronóstico</span>
           <strong>{pct(p.result_clarity)}</strong>
           <small>{pct(p.outcome_uncertainty)} de incertidumbre 1X2</small>
+          <i style={{ "--value": pct(p.result_clarity) } as React.CSSProperties} />
         </div>
         <div>
           <span>Puntos esperados</span>
           <strong>{p.home_expected_points.toFixed(2)} – {p.away_expected_points.toFixed(2)}</strong>
           <small>local frente a visitante</small>
+          <i style={{ "--value": "100%" } as React.CSSProperties} />
         </div>
         <div>
           <span>Fuerza de señal</span>
           <strong>{pct(p.signal_strength)}</strong>
           <small>favorito × confianza de datos</small>
+          <i style={{ "--value": pct(p.signal_strength) } as React.CSSProperties} />
         </div>
       </section>
 

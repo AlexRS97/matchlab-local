@@ -40,6 +40,7 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
     <Link href={`/partidos/${fixture.id}`} className="fixture-card">
       <div className="fixture-head">
         <span className="fixture-competition">
+          <span className="competition-dot" aria-hidden="true" />
           <b>{fixture.competition.name}</b>
           {fixture.competition.country && <> · {fixture.competition.country}</>}
           {fixture.round_name && <> · {fixture.round_name}</>}
@@ -84,9 +85,9 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
               <span className="away" style={{ width: percent(prediction.away_win_probability) }} />
             </div>
             <div className="probability-row">
-              <span>1 <b>{percent(prediction.home_win_probability)}</b></span>
-              <span>X <b>{percent(prediction.draw_probability)}</b></span>
-              <span>2 <b>{percent(prediction.away_win_probability)}</b></span>
+              <span><i className="prob-dot home" />1 <b>{percent(prediction.home_win_probability)}</b></span>
+              <span><i className="prob-dot draw" />X <b>{percent(prediction.draw_probability)}</b></span>
+              <span><i className="prob-dot away" />2 <b>{percent(prediction.away_win_probability)}</b></span>
               <span className="confidence">
                 Señal {percent(prediction.signal_strength)} · confianza {percent(prediction.confidence)}
               </span>
@@ -94,6 +95,7 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
           </div>
         </>
       ) : <div className="no-analysis">Análisis pendiente por falta de datos.</div>}
+      <span className="card-action">Ver análisis completo <span aria-hidden="true">→</span></span>
     </Link>
   );
 }

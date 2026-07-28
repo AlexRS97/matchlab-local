@@ -20,7 +20,8 @@ confianza: no presenta una predicción como certeza.
 - Radiografía diaria, distribución visual 1X2, bandas de goles, explorador de mercados y matriz de
   marcadores 5x5.
 - Snapshots point-in-time de features y predicciones versionadas.
-- Web Next.js responsive con cartelera diaria y análisis detallado.
+- Web Next.js responsive con identidad visual propia, navegación accesible, filtros claros,
+  cartelera diaria y análisis detallado optimizado para escritorio y móvil.
 - Proyecto dbt con staging, forma rolling y mart diario.
 - Modo demo, pruebas unitarias, Docker Compose y scripts para Windows.
 - Captura de cuotas, detección separada de valor esperado y tendencias, rendimiento y calidad.

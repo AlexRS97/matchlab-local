@@ -13,15 +13,24 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <header className="topbar">
           <Link href="/" className="brand">
-            <img src="/mark.svg" alt="" width="38" height="38" />
-            <span>MatchLab</span>
+            <img src="/mark.svg" alt="" width="40" height="40" />
+            <span className="brand-copy">
+              <b>MatchLab</b>
+              <small>Football intelligence</small>
+            </span>
           </Link>
-          <div className="model-pill"><span /> Modelo probabilístico · análisis avanzado</div>
+          <nav className="top-actions" aria-label="Navegación principal">
+            <Link href="/#partidos" className="top-link">Partidos</Link>
+            <div className="model-pill"><span /> Modelo activo</div>
+          </nav>
         </header>
         {children}
         <footer>
-          <strong>MatchLab</strong> estima probabilidades, no certezas. Valida el modelo antes de
-          arriesgar dinero y apuesta siempre con responsabilidad.
+          <div>
+            <strong>MatchLab</strong>
+            <span>Análisis probabilístico para tomar decisiones mejor informadas.</span>
+          </div>
+          <p>Las probabilidades no son certezas. Valida el modelo y apuesta siempre con responsabilidad.</p>
         </footer>
       </body>
     </html>
