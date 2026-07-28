@@ -159,6 +159,7 @@ export default async function FixturePage({
         <a href="#modelos">Goles y córners</a>
         <a href="#mercados">Mercados</a>
         <a href="#marcadores">Marcadores</a>
+        <a href="#factores">Factores</a>
       </nav>
 
       <section className="outcome-section" id="resultado">
@@ -327,11 +328,41 @@ export default async function FixturePage({
         ))}
       </section>
 
-      <section className="analysis-panel explanation-panel">
-        <p className="eyebrow">POR QUÉ DICE ESTO EL MODELO</p>
-        <ul className="reasons">{p.explanation.map((reason) => <li key={reason}>{reason}</li>)}</ul>
-        <div className={`quality large ${p.data_quality}`}>
-          Calidad {p.data_quality} · confianza {pct(p.confidence)} · modelo {p.model_version}
+      <section className="model-coverage" id="factores">
+        <div className="coverage-heading">
+          <div>
+            <p className="eyebrow">TRAZABILIDAD DEL ANÁLISIS</p>
+            <h2>Qué tiene en cuenta el modelo</h2>
+          </div>
+          <span>Solo información disponible antes del inicio</span>
+        </div>
+        <div className="coverage-grid">
+          <article>
+            <span className="coverage-state active">Incluido ahora</span>
+            <ul>
+              <li>Forma reciente con mayor peso para los últimos partidos</li>
+              <li>Goles a favor y en contra, separados por local y visitante</li>
+              <li>Nivel goleador de la competición y ventaja de jugar en casa</li>
+              <li>Clasificación, muestra histórica y calidad de cobertura</li>
+              <li>Córners propios y concedidos cuando la muestra es suficiente</li>
+              <li>Incertidumbre, amistosos y cuotas reales cuando están disponibles</li>
+            </ul>
+          </article>
+          <article className="future-coverage">
+            <span className="coverage-state future">Con la API key</span>
+            <p>
+              Se comprobará qué ligas ofrecen bajas, sanciones, alineaciones, descanso, calendario y
+              otras variables contextuales. Solo se incorporarán después de medir que mejoran el
+              backtesting; añadir más datos sin validarlos puede empeorar una predicción.
+            </p>
+          </article>
+        </div>
+        <div className="coverage-explanation">
+          <p className="eyebrow">POR QUÉ DICE ESTO EL MODELO</p>
+          <ul className="reasons">{p.explanation.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+          <div className={`quality large ${p.data_quality}`}>
+            Calidad {p.data_quality} · confianza {pct(p.confidence)} · modelo {p.model_version}
+          </div>
         </div>
       </section>
     </main>

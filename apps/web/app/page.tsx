@@ -1,7 +1,7 @@
 import { FixtureCard } from "@/components/FixtureCard";
 import { RefreshButton } from "@/components/RefreshButton";
 import { getDailyAnalysis } from "@/lib/api";
-import type { DailyAnalysis } from "@/lib/types";
+import type { DailyAnalysis, Fixture, Recommendation } from "@/lib/types";
 import Link from "next/link";
 
 function madridToday() {
@@ -31,6 +31,68 @@ function signalHref(selectedDate: string, params: Search, signal: string) {
   if (params.quality && params.quality !== "Todas") query.set("quality", params.quality);
   if (signal !== "Todas") query.set("signal", signal);
   return `/?${query.toString()}#partidos`;
+}
+
+const selectionLabel: Record<string, string> = {
+  Home: "Victoria local",
+  Draw: "Empate",
+  Away: "Victoria visitante",
+  "Over 2.5": "Más de 2,5 goles",
+  "Under 2.5": "Menos de 2,5 goles",
+  "BTTS Yes": "Ambos equipos marcan",
+  "BTTS No": "No marcan ambos",
+  "Over 8.5": "Más de 8,5 córners",
+  "Under 8.5": "Menos de 8,5 córners",
+  "Over 9.5": "Más de 9,5 córners",
+  "Under 9.5": "Menos de 9,5 córners",
+};
+
+type HotMatch = {
+  fixture: Fixture;
+  recommendation: Recommendation;
+  score: number;
+  reliableProbability: number;
+};
+
+/**
+ * El índice HOT no es otra probabilidad. Ordena los análisis más aprovechables
+ * combinando señal, cobertura, claridad, calidad y, cuando existe, valor real.
+ */
+function buildHotMatches(fixtures: Fixture[]): HotMatch[] {
+  return fixtures
+    .flatMap((fixture): HotMatch[] => {
+      const prediction = fixture.prediction;
+      if (!prediction || prediction.recommendations.length === 0) return [];
+
+      const recommendation = prediction.recommendations.reduce((best, item) =>
+        item.signal_score > best.signal_score ? item : best,
+      );
+      const reliableProbability =
+        recommendation.conservative_probability ?? recommendation.probability * prediction.confidence;
+      const qualityScore = prediction.data_quality === "alta" ? 0.95 : prediction.data_quality === "media" ? 0.68 : 0.35;
+      const valueBonus =
+        recommendation.kind === "valor"
+          ? Math.min(0.04, Math.max(0, recommendation.expected_value ?? 0) * 0.3)
+          : 0;
+      const score = Math.min(
+        0.99,
+        reliableProbability * 0.38 +
+          prediction.confidence * 0.24 +
+          prediction.signal_strength * 0.18 +
+          prediction.result_clarity * 0.12 +
+          qualityScore * 0.08 +
+          valueBonus,
+      );
+
+      return [{ fixture, recommendation, score: Math.round(score * 100), reliableProbability }];
+    })
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.recommendation.signal_score - a.recommendation.signal_score ||
+        b.fixture.competition.priority - a.fixture.competition.priority,
+    )
+    .slice(0, 3);
 }
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
@@ -73,15 +135,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     : 0;
   const openGames = analyzed.filter((fixture) => (fixture.prediction?.over_2_5_probability ?? 0) >= 0.6).length;
   const bttsGames = analyzed.filter((fixture) => (fixture.prediction?.btts_probability ?? 0) >= 0.6).length;
-  const featured = data.fixtures
-    .map((fixture) => ({ fixture, recommendation: fixture.prediction?.recommendations[0] }))
-    .filter((item) => item.recommendation)
-    .sort((a, b) => {
-      const aValue = a.recommendation?.kind === "valor" ? 1 : 0;
-      const bValue = b.recommendation?.kind === "valor" ? 1 : 0;
-      return bValue - aValue || (b.recommendation?.signal_score ?? 0) - (a.recommendation?.signal_score ?? 0);
-    })
-    .slice(0, 3);
+  const hotMatches = buildHotMatches(data.fixtures);
   const formattedDate = new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`));
   const lastUpdated = data.last_updated_at
     ? new Intl.DateTimeFormat("es-ES", {
@@ -152,22 +206,58 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           <article><span>Partidos abiertos</span><strong>{openGames}</strong><small>≥ 60% de más de 2,5</small></article>
           <article><span>Ambos marcan</span><strong>{bttsGames}</strong><small>≥ 60% de probabilidad</small></article>
         </div>
-        {featured.length > 0 && (
-          <div className="featured-signals">
-            <div className="featured-label">Señales destacadas</div>
-            {featured.map(({ fixture, recommendation }) => (
-              <Link href={`/partidos/${fixture.id}`} key={fixture.id}>
-                <span>{recommendation?.kind === "valor" ? "Valor" : "Tendencia"}</span>
-                <b>{fixture.home_team.name} – {fixture.away_team.name}</b>
-                <small>
-                  {recommendation?.selection} · {Math.round((recommendation?.probability ?? 0) * 100)}%
-                  {recommendation?.fair_odds ? ` · justa ${recommendation.fair_odds.toFixed(2)}` : ""}
-                </small>
+      </section>
+
+      {hotMatches.length > 0 && (
+        <section className="hot-section" aria-labelledby="hot-title">
+          <div className="hot-heading">
+            <div>
+              <p className="eyebrow"><span aria-hidden="true">◆</span> HOT DEL DÍA</p>
+              <h2 id="hot-title">
+                {hotMatches.length === 3
+                  ? "Los 3 análisis más sólidos"
+                  : `${hotMatches.length} ${hotMatches.length === 1 ? "análisis sólido" : "análisis sólidos"}`}
+              </h2>
+              <p>Priorizados por probabilidad conservadora, confianza, calidad, claridad y fuerza de señal.</p>
+            </div>
+            <div className="hot-legend">
+              <b>Índice HOT</b>
+              <span>Ranking comparativo, no garantía de acierto</span>
+            </div>
+          </div>
+          <div className="hot-grid">
+            {hotMatches.map(({ fixture, recommendation, score, reliableProbability }, index) => (
+              <Link href={`/partidos/${fixture.id}`} className="hot-card" key={fixture.id}>
+                <div className="hot-card-top">
+                  <span className="hot-rank">#{index + 1}</span>
+                  <span className={`hot-kind ${recommendation.kind}`}>
+                    {recommendation.kind === "valor" ? "Valor detectado" : "Tendencia sólida"}
+                  </span>
+                  <span className="hot-score"><b>{score}</b><small>/100</small></span>
+                </div>
+                <div className="hot-context">
+                  <span>{timeFormatter.format(new Date(fixture.kickoff_at))}</span>
+                  <span>{fixture.competition.name}</span>
+                </div>
+                <h3>{fixture.home_team.name} <span>vs</span> {fixture.away_team.name}</h3>
+                <div className="hot-pick">
+                  <small>Mejor señal</small>
+                  <strong>{selectionLabel[recommendation.selection] ?? recommendation.selection}</strong>
+                </div>
+                <div className="hot-metrics">
+                  <span><small>Prob. modelo</small><b>{Math.round(recommendation.probability * 100)}%</b></span>
+                  <span><small>Prob. conservadora</small><b>{Math.round(reliableProbability * 100)}%</b></span>
+                  <span><small>Confianza</small><b>{Math.round((fixture.prediction?.confidence ?? 0) * 100)}%</b></span>
+                </div>
+                <div className="hot-card-footer">
+                  <span>Datos {fixture.prediction?.data_quality}</span>
+                  <b>Ver análisis completo <span aria-hidden="true">→</span></b>
+                </div>
               </Link>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {data.demo_mode && (
         <section className="data-readiness">

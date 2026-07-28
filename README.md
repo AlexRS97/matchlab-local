@@ -22,11 +22,15 @@ confianza: no presenta una predicción como certeza.
 - Probabilidad conservadora ajustada por confianza para exigir más evidencia antes de marcar valor.
 - Radiografía diaria, distribución visual 1X2, bandas de goles, explorador de mercados y matriz de
   marcadores 5x5.
+- Ranking HOT 3 del día, calculado con probabilidad conservadora, confianza, calidad, claridad,
+  fuerza de señal y valor esperado cuando existen cuotas reales.
 - Snapshots point-in-time de features y predicciones versionadas.
 - Web Next.js responsive con identidad visual propia, navegación accesible, filtros claros,
   cartelera diaria y análisis detallado optimizado para escritorio y móvil.
 - Filtros rápidos, guía de lectura, navegación interna y estados visuales de carga, error y página
   inexistente para que el modo demo y los datos reales compartan la misma experiencia.
+- Trazabilidad visible de los factores incluidos y de las variables contextuales que deben validarse
+  con datos reales antes de incorporarlas al modelo.
 - Proyecto dbt con staging, forma rolling y mart diario.
 - Modo demo, pruebas unitarias, Docker Compose y scripts para Windows.
 - Captura de cuotas, detección separada de valor esperado y tendencias, rendimiento y calidad.
