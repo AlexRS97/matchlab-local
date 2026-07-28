@@ -31,7 +31,23 @@ def test_value_requires_price_advantage() -> None:
     recommendations = build_recommendations(_prediction(), [odd])
     assert recommendations[0].kind == "valor"
     assert recommendations[0].selection == "Home"
-    assert recommendations[0].expected_value == 0.2
+    assert recommendations[0].expected_value == 0.0933
+    assert recommendations[0].conservative_probability == 0.5467
+    assert recommendations[0].fair_odds == 1.83
+    assert recommendations[0].probability_edge == 0.0467
+
+
+def test_small_raw_edge_is_rejected_after_confidence_adjustment() -> None:
+    odd = SimpleNamespace(
+        selection="Home",
+        decimal_odds=Decimal("1.75"),
+        bookmaker="Test",
+        captured_at=datetime.now(UTC),
+    )
+
+    recommendations = build_recommendations(_prediction(confidence=0.62), [odd])
+
+    assert all(item.kind != "valor" for item in recommendations)
 
 
 def test_low_quality_returns_no_recommendation() -> None:

@@ -36,7 +36,7 @@ class PredictionService:
         self.db = db
 
     def generate_for_fixture(self, fixture: Fixture) -> Prediction:
-        fixture = self.db.scalar(
+        stored_fixture = self.db.scalar(
             select(Fixture)
             .options(
                 selectinload(Fixture.home_team),
@@ -45,23 +45,30 @@ class PredictionService:
             )
             .where(Fixture.id == fixture.id)
         )
-        if fixture is None:
+        if stored_fixture is None:
             raise ValueError("Partido no encontrado")
+        fixture = stored_fixture
 
-        histories = self.db.scalars(
-            select(Fixture)
-            .options(selectinload(Fixture.statistics))
-            .where(
-                Fixture.kickoff_at < fixture.kickoff_at,
-                Fixture.status.in_(FINISHED_STATUSES),
-                or_(
-                    Fixture.home_team_id.in_([fixture.home_team_id, fixture.away_team_id]),
-                    Fixture.away_team_id.in_([fixture.home_team_id, fixture.away_team_id]),
-                ),
-            )
-            .order_by(Fixture.kickoff_at.desc())
-            .limit(100)
-        ).all()
+        histories = list(
+            self.db.scalars(
+                select(Fixture)
+                .options(selectinload(Fixture.statistics))
+                .where(
+                    Fixture.kickoff_at < fixture.kickoff_at,
+                    Fixture.status.in_(FINISHED_STATUSES),
+                    or_(
+                        Fixture.home_team_id.in_(
+                            [fixture.home_team_id, fixture.away_team_id]
+                        ),
+                        Fixture.away_team_id.in_(
+                            [fixture.home_team_id, fixture.away_team_id]
+                        ),
+                    ),
+                )
+                .order_by(Fixture.kickoff_at.desc())
+                .limit(100)
+            ).all()
+        )
 
         league_games = self.db.scalars(
             select(Fixture)
@@ -76,10 +83,26 @@ class PredictionService:
             .limit(300)
         ).all()
         league_home_goals = (
-            fmean([game.home_goals for game in league_games]) if league_games else 1.45
+            fmean(
+                [
+                    float(game.home_goals)
+                    for game in league_games
+                    if game.home_goals is not None
+                ]
+            )
+            if league_games
+            else 1.45
         )
         league_away_goals = (
-            fmean([game.away_goals for game in league_games]) if league_games else 1.15
+            fmean(
+                [
+                    float(game.away_goals)
+                    for game in league_games
+                    if game.away_goals is not None
+                ]
+            )
+            if league_games
+            else 1.15
         )
 
         home = self._team_history(histories, fixture.home_team_id, desired_home=True)

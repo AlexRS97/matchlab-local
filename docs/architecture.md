@@ -42,10 +42,15 @@ FastAPI <------ Next.js
 5. Cada ejecución guarda features, versión del modelo y fecha de generación.
 6. No se etiqueta una predicción como apuesta. Las oportunidades de valor exigen cuotas y un mínimo
    de confianza, y aun así necesitan backtesting temporal antes de usarse con dinero.
+7. Los mercados derivados y las visualizaciones se recalculan desde los parámetros almacenados; no
+   duplican estado ni requieren migraciones para enriquecer predicciones históricas.
+8. El valor esperado usa una probabilidad conservadora regularizada hacia `1/3` en 1X2 y `1/2` en
+   mercados binarios según la confianza de datos.
+9. Las cuotas justas se presentan como referencia matemática sin margen y nunca como precio de
+   entrada ni recomendación de tamaño de apuesta.
 
 ## Camino a producción
 
 PostgreSQL puede migrarse a RDS, Neon o Supabase; Redis a un servicio gestionado; API y workers a
 servicios de contenedores; Next.js a Vercel. Antes de compartir el sistema deben añadirse identidad,
 roles, rate limiting, secretos gestionados, observabilidad, copias de seguridad y términos legales.
-

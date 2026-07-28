@@ -14,6 +14,11 @@ confianza: no presenta una predicción como certeza.
   antiguos y, mientras siga abierto, ejecuta el ciclo de actualización cada 30 minutos.
 - Histórico reciente, standings y estadísticas de córners por equipo.
 - Baseline regularizado de Poisson para goles y binomial negativa para córners.
+- Análisis derivado con doble oportunidad, líneas alternativas de goles y córners, goles por equipo,
+  porterías a cero, puntos esperados y cuotas justas sin margen.
+- Probabilidad conservadora ajustada por confianza para exigir más evidencia antes de marcar valor.
+- Radiografía diaria, distribución visual 1X2, bandas de goles, explorador de mercados y matriz de
+  marcadores 5x5.
 - Snapshots point-in-time de features y predicciones versionadas.
 - Web Next.js responsive con cartelera diaria y análisis detallado.
 - Proyecto dbt con staging, forma rolling y mart diario.
@@ -180,6 +185,16 @@ docker compose down -v
 
 Un valor de `2.72` significa una media de distribución, no que el partido vaya a tener exactamente
 tres goles. La confianza mide cobertura y tamaño de muestra, no probabilidad de acertar una apuesta.
+La **cuota justa** es el inverso de la probabilidad estimada y no incluye margen de casa, liquidez ni
+riesgo del modelo. La **claridad** resume cuánto se concentra el 1X2; una claridad baja indica que el
+resultado está repartido entre varias posibilidades. La **fuerza de señal** combina la probabilidad
+del resultado más probable con la confianza de los datos, pero tampoco es una garantía.
+
+Cuando existen cuotas reales, MatchLab reduce la probabilidad hacia un escenario neutral según la
+confianza antes de calcular valor esperado. Esta probabilidad conservadora evita presentar pequeñas
+diferencias como oportunidades sólidas. No se calcula tamaño de apuesta: primero se necesitan
+calibración, backtesting walk-forward y validación fuera de muestra.
+
 Antes de usar dinero real se necesita un backtest walk-forward, calibración por liga y mercado, cuotas
 históricas, closing-line value y una muestra fuera de entrenamiento. Consulta [la arquitectura](docs/architecture.md)
 para ver las protecciones ya incorporadas.

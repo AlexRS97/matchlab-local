@@ -85,10 +85,12 @@ class IngestionService:
             return job
         except Exception as exc:
             self.db.rollback()
-            job = self.db.get(IngestionJob, job.id)
-            job.status = "failed"
-            job.finished_at = datetime.now(UTC)
-            job.error_detail = str(exc)
+            failed_job = self.db.get(IngestionJob, job.id)
+            if failed_job is None:
+                raise
+            failed_job.status = "failed"
+            failed_job.finished_at = datetime.now(UTC)
+            failed_job.error_detail = str(exc)
             self.db.commit()
             raise
 

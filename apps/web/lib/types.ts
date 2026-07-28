@@ -20,6 +20,10 @@ export type Recommendation = {
   decimal_odds: number | null;
   bookmaker: string | null;
   expected_value: number | null;
+  conservative_probability: number | null;
+  fair_odds: number | null;
+  probability_edge: number | null;
+  signal_score: number;
 };
 
 export type TeamInsight = {
@@ -30,6 +34,26 @@ export type TeamInsight = {
   win_probability: number;
   avoid_defeat_probability: number;
   summary: string;
+};
+
+export type MarketProbability = {
+  key: string;
+  category: string;
+  selection: string;
+  probability: number;
+  fair_odds: number | null;
+};
+
+export type ScoreMatrixCell = {
+  home_goals: number;
+  away_goals: number;
+  probability: number;
+  relative_intensity: number;
+};
+
+export type GoalBand = {
+  label: string;
+  probability: number;
 };
 
 export type Prediction = {
@@ -55,6 +79,16 @@ export type Prediction = {
   explanation: string[];
   recommendations: Recommendation[];
   team_insights: TeamInsight[];
+  market_probabilities: MarketProbability[];
+  score_matrix: ScoreMatrixCell[];
+  goal_bands: GoalBand[];
+  outcome_uncertainty: number;
+  result_clarity: number;
+  home_expected_points: number;
+  away_expected_points: number;
+  favorite: "home" | "draw" | "away";
+  favorite_probability: number;
+  signal_strength: number;
 };
 
 export type Fixture = {

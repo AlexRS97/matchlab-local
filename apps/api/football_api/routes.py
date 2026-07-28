@@ -28,6 +28,7 @@ from football_api.services.ingestion import IngestionService
 from football_api.services.persistence import FINISHED_STATUSES
 from football_api.services.predictions import PredictionService
 from football_api.services.recommendations import build_recommendations, build_team_insights
+from prediction_models import build_advanced_analysis
 
 router = APIRouter(prefix="/api/v1")
 DbDependency = Annotated[Session, Depends(get_db)]
@@ -41,7 +42,9 @@ def _date_bounds(target_date: date, settings: Settings) -> tuple[datetime, datet
 
 
 def _latest_prediction(fixture: Fixture) -> Prediction | None:
-    return max(fixture.predictions, key=lambda item: item.generated_at, default=None)
+    if not fixture.predictions:
+        return None
+    return max(fixture.predictions, key=lambda item: item.generated_at)
 
 
 def _prediction_response(
@@ -59,6 +62,12 @@ def _prediction_response(
         total_corners = round(
             prediction.home_expected_corners + prediction.away_expected_corners, 2
         )
+    advanced = build_advanced_analysis(
+        prediction.home_expected_goals,
+        prediction.away_expected_goals,
+        prediction.home_expected_corners,
+        prediction.away_expected_corners,
+    )
     return PredictionResponse(
         id=prediction.id,
         generated_at=prediction.generated_at,
@@ -90,6 +99,24 @@ def _prediction_response(
             TeamInsightResponse(**asdict(item))
             for item in build_team_insights(fixture, prediction)
         ],
+        market_probabilities=advanced.market_probabilities,
+        score_matrix=advanced.score_matrix,
+        goal_bands=advanced.goal_bands,
+        outcome_uncertainty=advanced.outcome_uncertainty,
+        result_clarity=advanced.result_clarity,
+        home_expected_points=advanced.home_expected_points,
+        away_expected_points=advanced.away_expected_points,
+        favorite=advanced.favorite,
+        favorite_probability=advanced.favorite_probability,
+        signal_strength=round(
+            max(
+                prediction.home_win_probability,
+                prediction.draw_probability,
+                prediction.away_win_probability,
+            )
+            * prediction.confidence,
+            4,
+        ),
     )
 
 
@@ -142,20 +169,22 @@ def _fixture_response(
 def _fixtures_for_date(db: Session, target_date: date, settings: Settings) -> list[Fixture]:
     start, end = _date_bounds(target_date, settings)
     start = max(start, datetime.now(UTC))
-    return db.scalars(
-        select(Fixture)
-        .options(
-            selectinload(Fixture.home_team),
-            selectinload(Fixture.away_team),
-            selectinload(Fixture.competition),
-            selectinload(Fixture.predictions),
-        )
-        .where(
-            Fixture.kickoff_at.between(start, end),
-            Fixture.status.in_({"NS", "TBD"}),
-        )
-        .order_by(Fixture.kickoff_at)
-    ).all()
+    return list(
+        db.scalars(
+            select(Fixture)
+            .options(
+                selectinload(Fixture.home_team),
+                selectinload(Fixture.away_team),
+                selectinload(Fixture.competition),
+                selectinload(Fixture.predictions),
+            )
+            .where(
+                Fixture.kickoff_at.between(start, end),
+                Fixture.status.in_({"NS", "TBD"}),
+            )
+            .order_by(Fixture.kickoff_at)
+        ).all()
+    )
 
 
 def _odds_by_fixture(
@@ -498,7 +527,9 @@ def train_model() -> dict:
 
 @router.get("/admin/jobs", response_model=list[JobResponse])
 def list_jobs(db: DbDependency) -> list[IngestionJob]:
-    return db.scalars(select(IngestionJob).order_by(IngestionJob.id.desc()).limit(50)).all()
+    return list(
+        db.scalars(select(IngestionJob).order_by(IngestionJob.id.desc()).limit(50)).all()
+    )
 
 
 @router.get("/admin/data-quality", response_model=DataQualityResponse)

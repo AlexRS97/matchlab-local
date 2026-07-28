@@ -31,6 +31,10 @@ class RecommendationResponse(BaseModel):
     decimal_odds: float | None = None
     bookmaker: str | None = None
     expected_value: float | None = None
+    conservative_probability: float | None = None
+    fair_odds: float | None = None
+    probability_edge: float | None = None
+    signal_score: float = 0.0
 
 
 class TeamInsightResponse(BaseModel):
@@ -41,6 +45,26 @@ class TeamInsightResponse(BaseModel):
     win_probability: float
     avoid_defeat_probability: float
     summary: str
+
+
+class MarketProbabilityResponse(BaseModel):
+    key: str
+    category: str
+    selection: str
+    probability: float = Field(ge=0, le=1)
+    fair_odds: float | None = None
+
+
+class ScoreMatrixCellResponse(BaseModel):
+    home_goals: int = Field(ge=0)
+    away_goals: int = Field(ge=0)
+    probability: float = Field(ge=0, le=1)
+    relative_intensity: float = Field(ge=0, le=1)
+
+
+class GoalBandResponse(BaseModel):
+    label: str
+    probability: float = Field(ge=0, le=1)
 
 
 class PredictionResponse(BaseModel):
@@ -66,6 +90,16 @@ class PredictionResponse(BaseModel):
     explanation: list[str]
     recommendations: list[RecommendationResponse] = Field(default_factory=list)
     team_insights: list[TeamInsightResponse] = Field(default_factory=list)
+    market_probabilities: list[MarketProbabilityResponse] = Field(default_factory=list)
+    score_matrix: list[ScoreMatrixCellResponse] = Field(default_factory=list)
+    goal_bands: list[GoalBandResponse] = Field(default_factory=list)
+    outcome_uncertainty: float = Field(ge=0, le=1)
+    result_clarity: float = Field(ge=0, le=1)
+    home_expected_points: float = Field(ge=0, le=3)
+    away_expected_points: float = Field(ge=0, le=3)
+    favorite: str
+    favorite_probability: float = Field(ge=0, le=1)
+    signal_strength: float = Field(ge=0, le=1)
 
 
 class FixtureResponse(BaseModel):

@@ -2,6 +2,7 @@ import { FixtureCard } from "@/components/FixtureCard";
 import { RefreshButton } from "@/components/RefreshButton";
 import { getDailyAnalysis } from "@/lib/api";
 import type { DailyAnalysis } from "@/lib/types";
+import Link from "next/link";
 
 function madridToday() {
   return new Intl.DateTimeFormat("en-CA", {
@@ -15,7 +16,13 @@ const timeFormatter = new Intl.DateTimeFormat("es-ES", {
   timeZone: "Europe/Madrid",
 });
 
-type Search = { date?: string; region?: string; quality?: string; q?: string };
+type Search = {
+  date?: string;
+  region?: string;
+  quality?: string;
+  signal?: string;
+  q?: string;
+};
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
@@ -38,9 +45,34 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const visible = data.fixtures
     .filter((fixture) => !params.region || params.region === "Todas" || fixture.competition.region === params.region)
     .filter((fixture) => !params.quality || params.quality === "Todas" || fixture.prediction?.data_quality === params.quality)
+    .filter((fixture) => {
+      if (!params.signal || params.signal === "Todas") return true;
+      if (params.signal === "Con señal") return Boolean(fixture.prediction?.recommendations.length);
+      if (params.signal === "Valor") return fixture.prediction?.recommendations.some((item) => item.kind === "valor");
+      if (params.signal === "Alta confianza") return (fixture.prediction?.confidence ?? 0) >= 0.75;
+      return true;
+    })
     .filter((fixture) => !query || `${fixture.home_team.name} ${fixture.away_team.name} ${fixture.competition.name} ${fixture.competition.country}`.toLocaleLowerCase("es").includes(query))
     .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at) || b.competition.priority - a.competition.priority);
   const groups = Map.groupBy(visible, (fixture) => fixture.kickoff_at);
+  const analyzed = data.fixtures.filter((fixture) => fixture.prediction);
+  const averageGoals = analyzed.length
+    ? analyzed.reduce((total, fixture) => total + (fixture.prediction?.total_expected_goals ?? 0), 0) / analyzed.length
+    : 0;
+  const averageConfidence = analyzed.length
+    ? analyzed.reduce((total, fixture) => total + (fixture.prediction?.confidence ?? 0), 0) / analyzed.length
+    : 0;
+  const openGames = analyzed.filter((fixture) => (fixture.prediction?.over_2_5_probability ?? 0) >= 0.6).length;
+  const bttsGames = analyzed.filter((fixture) => (fixture.prediction?.btts_probability ?? 0) >= 0.6).length;
+  const featured = data.fixtures
+    .map((fixture) => ({ fixture, recommendation: fixture.prediction?.recommendations[0] }))
+    .filter((item) => item.recommendation)
+    .sort((a, b) => {
+      const aValue = a.recommendation?.kind === "valor" ? 1 : 0;
+      const bValue = b.recommendation?.kind === "valor" ? 1 : 0;
+      return bValue - aValue || (b.recommendation?.signal_score ?? 0) - (a.recommendation?.signal_score ?? 0);
+    })
+    .slice(0, 3);
   const formattedDate = new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeZone: "UTC" }).format(new Date(`${selectedDate}T12:00:00Z`));
   const lastUpdated = data.last_updated_at
     ? new Intl.DateTimeFormat("es-ES", {
@@ -82,6 +114,34 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <div><span>Fecha</span><strong className="date-stat">{formattedDate}</strong></div>
       </section>
 
+      <section className="daily-intelligence">
+        <div className="section-title">
+          <div><p className="eyebrow">LECTURA RÁPIDA</p><h2>Radiografía de la jornada</h2></div>
+          <span>Calculada sobre {analyzed.length} partidos analizados</span>
+        </div>
+        <div className="pulse-grid">
+          <article><span>Media de goles esperados</span><strong>{averageGoals.toFixed(2)}</strong><small>por partido</small></article>
+          <article><span>Confianza media</span><strong>{Math.round(averageConfidence * 100)}%</strong><small>cobertura del modelo</small></article>
+          <article><span>Partidos abiertos</span><strong>{openGames}</strong><small>≥ 60% de más de 2,5</small></article>
+          <article><span>Ambos marcan</span><strong>{bttsGames}</strong><small>≥ 60% de probabilidad</small></article>
+        </div>
+        {featured.length > 0 && (
+          <div className="featured-signals">
+            <div className="featured-label">Señales destacadas</div>
+            {featured.map(({ fixture, recommendation }) => (
+              <Link href={`/partidos/${fixture.id}`} key={fixture.id}>
+                <span>{recommendation?.kind === "valor" ? "Valor" : "Tendencia"}</span>
+                <b>{fixture.home_team.name} – {fixture.away_team.name}</b>
+                <small>
+                  {recommendation?.selection} · {Math.round((recommendation?.probability ?? 0) * 100)}%
+                  {recommendation?.fair_odds ? ` · justa ${recommendation.fair_odds.toFixed(2)}` : ""}
+                </small>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
       <form className="filters">
         <input type="hidden" name="date" value={selectedDate} />
         <input name="q" defaultValue={params.q} placeholder="Equipo o competición" />
@@ -93,6 +153,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           <option value="alta">Calidad alta</option>
           <option value="media">Calidad media</option>
           <option value="baja">Calidad baja</option>
+        </select>
+        <select name="signal" defaultValue={params.signal ?? "Todas"}>
+          <option value="Todas">Todas las señales</option>
+          <option value="Con señal">Con recomendación</option>
+          <option value="Valor">Solo valor detectado</option>
+          <option value="Alta confianza">Alta confianza</option>
         </select>
         <button type="submit">Filtrar</button>
       </form>

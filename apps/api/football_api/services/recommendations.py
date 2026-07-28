@@ -18,6 +18,10 @@ class Recommendation:
     decimal_odds: float | None = None
     bookmaker: str | None = None
     expected_value: float | None = None
+    conservative_probability: float | None = None
+    fair_odds: float | None = None
+    probability_edge: float | None = None
+    signal_score: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -84,11 +88,23 @@ def build_recommendations(
     best_odds = _best_current_odds(odds)
     results: list[Recommendation] = []
     for market, (selection, probability) in strongest_by_market.items():
+        neutral_probability = 1 / 3 if market == "Resultado" else 0.5
+        conservative_probability = neutral_probability + (
+            probability - neutral_probability
+        ) * prediction.confidence
+        fair_odds = 1 / conservative_probability
+        signal_score = conservative_probability * prediction.confidence
         odd = best_odds.get(selection)
         if odd is not None:
             decimal_odd = float(odd.decimal_odds)
-            expected_value = probability * decimal_odd - 1
-            if expected_value >= 0.04 and probability >= 0.45:
+            implied_probability = 1 / decimal_odd
+            probability_edge = conservative_probability - implied_probability
+            expected_value = conservative_probability * decimal_odd - 1
+            if (
+                expected_value >= 0.04
+                and probability_edge >= 0.025
+                and conservative_probability >= 0.42
+            ):
                 rating = (
                     "fuerte"
                     if prediction.confidence >= 0.75 and expected_value >= 0.08
@@ -105,9 +121,13 @@ def build_recommendations(
                         decimal_odds=decimal_odd,
                         bookmaker=odd.bookmaker,
                         expected_value=round(expected_value, 4),
+                        conservative_probability=round(conservative_probability, 4),
+                        fair_odds=round(fair_odds, 2),
+                        probability_edge=round(probability_edge, 4),
+                        signal_score=round(signal_score, 4),
                         rationale=(
-                            "La probabilidad del modelo supera la probabilidad implícita "
-                            "de la mejor cuota capturada."
+                            "La probabilidad conservadora, ajustada por confianza, supera "
+                            "la probabilidad implícita de la mejor cuota capturada."
                         ),
                     )
                 )
@@ -122,9 +142,12 @@ def build_recommendations(
                     confidence=prediction.confidence,
                     rating="tendencia",
                     kind="tendencia",
+                    conservative_probability=round(conservative_probability, 4),
+                    fair_odds=round(fair_odds, 2),
+                    signal_score=round(signal_score, 4),
                     rationale=(
-                        "Tendencia estadística, no apuesta de valor: falta una cuota "
-                        "válida para comparar."
+                        "Tendencia estadística: la cuota justa es orientativa y falta "
+                        "una cuota válida para confirmar valor."
                     ),
                 )
             )
@@ -134,7 +157,7 @@ def build_recommendations(
         key=lambda item: (
             item.kind == "valor",
             item.expected_value or 0,
-            item.probability * item.confidence,
+            item.signal_score,
         ),
         reverse=True,
     )[:3]

@@ -67,6 +67,9 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
               <b>{selectionLabel[recommendation.selection] ?? recommendation.selection}</b>
               <strong>{percent(recommendation.probability)}</strong>
               {recommendation.decimal_odds && <em>@ {recommendation.decimal_odds.toFixed(2)}</em>}
+              {!recommendation.decimal_odds && recommendation.fair_odds && (
+                <em>justa {recommendation.fair_odds.toFixed(2)}</em>
+              )}
             </div>
           ) : (
             <div className="recommendation-strip neutral">
@@ -74,11 +77,20 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
               <b>La señal no supera el mínimo de calidad</b>
             </div>
           )}
-          <div className="probability-row">
-            <span>1 <b>{percent(prediction.home_win_probability)}</b></span>
-            <span>X <b>{percent(prediction.draw_probability)}</b></span>
-            <span>2 <b>{percent(prediction.away_win_probability)}</b></span>
-            <span className="confidence">Confianza {percent(prediction.confidence)}</span>
+          <div className="outcome-visual" aria-label="Distribución de probabilidades 1 X 2">
+            <div className="outcome-bar">
+              <span className="home" style={{ width: percent(prediction.home_win_probability) }} />
+              <span className="draw" style={{ width: percent(prediction.draw_probability) }} />
+              <span className="away" style={{ width: percent(prediction.away_win_probability) }} />
+            </div>
+            <div className="probability-row">
+              <span>1 <b>{percent(prediction.home_win_probability)}</b></span>
+              <span>X <b>{percent(prediction.draw_probability)}</b></span>
+              <span>2 <b>{percent(prediction.away_win_probability)}</b></span>
+              <span className="confidence">
+                Señal {percent(prediction.signal_strength)} · confianza {percent(prediction.confidence)}
+              </span>
+            </div>
           </div>
         </>
       ) : <div className="no-analysis">Análisis pendiente por falta de datos.</div>}

@@ -16,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <img src="/mark.svg" alt="" width="38" height="38" />
             <span>MatchLab</span>
           </Link>
-          <div className="model-pill"><span /> Modelo probabilístico v1</div>
+          <div className="model-pill"><span /> Modelo probabilístico · análisis avanzado</div>
         </header>
         {children}
         <footer>
@@ -27,4 +27,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-
