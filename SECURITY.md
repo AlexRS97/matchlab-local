@@ -10,7 +10,8 @@ publicada reciben correcciones de seguridad.
 No publiques vulnerabilidades, credenciales, datos personales ni detalles de explotación en una
 incidencia normal.
 
-1. Abre un **Private vulnerability report** desde la pestaña `Security` del repositorio.
+1. Si GitHub muestra **Private vulnerability reporting**, úsalo. En caso contrario, contacta de
+   forma privada al propietario `@AlexRS97` desde GitHub y solicita un canal seguro.
 2. Incluye componente afectado, impacto, versión o commit, pasos mínimos de reproducción y una
    propuesta de mitigación si la conoces.
 3. No accedas a datos que no sean tuyos, no mantengas persistencia y detén la prueba cuando hayas

@@ -224,6 +224,7 @@ docs                     decisiones de arquitectura
 
 - [Política de seguridad y comunicación responsable](SECURITY.md)
 - [Arquitectura de seguridad y requisitos previos a Internet](docs/security-architecture.md)
+- [Gobierno y controles efectivos de GitHub](docs/github-governance.md)
 - [Guía técnica de desarrollo y criterio de comentarios](docs/development.md)
 - [Protección de propiedad intelectual](docs/intellectual-property.md)
 - [Arquitectura de datos y predicción](docs/architecture.md)
