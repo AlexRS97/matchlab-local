@@ -59,10 +59,10 @@ a { color:inherit; text-decoration:none; }
   --paper: #f2f6fa;
   --card: #ffffff;
   --line: #d9e4ee;
-  --acid: #caff57;
-  --green: #11745b;
-  --green-soft: #e5f6ec;
-  --orange: #ff8a5c;
+  --acid: #69d4ff;
+  --green: #2f6fed;
+  --green-soft: #e8f1ff;
+  --orange: #79aefc;
   --blue: #2f6fed;
   --blue-deep: #0b3558;
   --blue-soft: #e8f1ff;
@@ -83,7 +83,7 @@ body {
   background:
     radial-gradient(circle at 8% 2%, rgba(69, 194, 255, .14), transparent 25rem),
     radial-gradient(circle at 92% 32%, rgba(47, 111, 237, .11), transparent 30rem),
-    radial-gradient(circle at 35% 82%, rgba(202, 255, 87, .08), transparent 24rem),
+    radial-gradient(circle at 35% 82%, rgba(69, 194, 255, .08), transparent 24rem),
     var(--paper);
 }
 
@@ -198,7 +198,7 @@ select:focus-visible {
   border-radius: 32px;
   background:
     linear-gradient(120deg, rgba(69, 194, 255, .09), transparent 42%),
-    linear-gradient(135deg, #071b2c 0%, #0b3558 58%, #12634f 128%);
+    linear-gradient(135deg, #071b2c 0%, #0b3558 58%, #176ca1 128%);
   box-shadow: 0 26px 70px rgba(8, 42, 71, .22);
   color: white;
 }
@@ -1441,6 +1441,199 @@ footer p {
   }
 }
 
+/* MatchLab blue identity: every former green accent maps to the blue system. */
+.brand img {
+  filter: drop-shadow(0 6px 12px rgba(47, 111, 237, .22));
+}
+
+.model-pill span,
+.update-status.active > span::before,
+.detail-nav-status i {
+  background: var(--cyan);
+  box-shadow: 0 0 0 4px rgba(69, 194, 255, .14);
+}
+
+.eyebrow,
+.detail-kicker {
+  color: #56758f;
+}
+
+.hero .eyebrow {
+  color: #a9dfff;
+}
+
+.eyebrow-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 0 5px rgba(69, 194, 255, .13);
+}
+
+.hero h1 em,
+.hero-points span::before,
+.calendar-icon {
+  color: #79dcff;
+}
+
+.hero::before {
+  border-color: rgba(105, 212, 255, .25);
+  box-shadow: 0 0 0 62px rgba(69, 194, 255, .035), 0 0 0 125px rgba(47, 111, 237, .025);
+}
+
+.date-panel form button {
+  background: linear-gradient(135deg, #8ce3ff, #55bdf7);
+  color: #08233a;
+}
+
+.date-panel form button:hover {
+  background: linear-gradient(135deg, #a9ebff, #72ccff);
+}
+
+.time-group > h3 em,
+.readiness-steps .pending > span,
+.hot-rank {
+  background: #69d4ff;
+  color: #08233a;
+}
+
+.readiness-steps .pending > span {
+  box-shadow: 0 0 0 4px rgba(69, 212, 255, .2);
+}
+
+.time-group::before {
+  background: linear-gradient(var(--blue), rgba(47, 111, 237, .06));
+}
+
+.time-group > h3::before,
+.competition-dot,
+.prob-dot.home {
+  background: var(--blue);
+  box-shadow: 0 0 0 4px rgba(47, 111, 237, .1);
+}
+
+.fixture-card::before {
+  background: linear-gradient(#69d4ff, var(--blue));
+}
+
+.starts-in,
+.quality.alta {
+  background: #e5f2ff;
+  color: #1f5b91;
+}
+
+.quality.media {
+  background: #e9edff;
+  color: #4a5da8;
+}
+
+.quality.baja {
+  background: #edf1f5;
+  color: #5e6f7e;
+}
+
+.team-fallback {
+  background: linear-gradient(135deg, #08233a, #17679d);
+  color: #8de4ff;
+}
+
+.metric-grid strong,
+.card-action span {
+  color: var(--blue-deep);
+}
+
+.recommendation-strip.valor,
+.recommendation-grid article.valor {
+  border-color: #b8d8f4;
+  background: linear-gradient(90deg, #e3f2ff, #f6fbff);
+  color: #214f78;
+}
+
+.recommendation-strip.tendencia {
+  border-color: #d1e2f2;
+  background: linear-gradient(90deg, #edf5ff, #f9fcff);
+  color: #294f74;
+}
+
+.outcome-bar .home,
+.outcome-chart .home {
+  background: #175d95;
+}
+
+.outcome-bar .draw,
+.outcome-chart .draw {
+  background: #a8c7e3;
+  color: #16364e;
+}
+
+.outcome-bar .away,
+.outcome-chart .away {
+  background: #69c7f5;
+  color: #0b304b;
+}
+
+.scoreboard {
+  background:
+    radial-gradient(circle at 50% 140%, rgba(69, 194, 255, .16), transparent 42%),
+    linear-gradient(135deg, #071c2d, #0b3558 64%, #17689a);
+}
+
+.scoreboard-fallback,
+.kickoff-badge {
+  color: #83ddff;
+}
+
+.result-meter i,
+.mini-meter i,
+.goal-bands i {
+  background: linear-gradient(90deg, #2f6fed, #69d4ff);
+}
+
+.matrix-cell {
+  background: rgba(69, 194, 255, calc(.08 + var(--heat) * .72));
+}
+
+.team-insights article {
+  border-left-color: var(--blue);
+}
+
+.explanation-panel {
+  border-left-color: var(--blue);
+}
+
+.reading-guide summary > span::before,
+.guide-icon,
+.guide-icon.value-guide {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.readiness-steps .complete > span {
+  background: #175d95;
+}
+
+.hot-heading .eyebrow span,
+.hot-legend b,
+.hot-kind.valor {
+  color: #82ddff;
+}
+
+.hot-kind.valor {
+  background: rgba(69, 194, 255, .13);
+}
+
+.future-coverage {
+  background:
+    radial-gradient(circle at 100% 0, rgba(69, 194, 255, .16), transparent 11rem),
+    #f7fbff !important;
+}
+
+.coverage-state.future {
+  background: #e3f3ff;
+  color: #27618e;
+}
+
+.future-coverage p {
+  color: #587086;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -2665,4 +2858,29 @@ footer p {
   .coverage-explanation .reasons {
     grid-template-columns: 1fr;
   }
+}
+
+/* Final blue guards for components declared after the main identity layer. */
+.pulse-grid article:nth-child(4)::after {
+  background: rgba(69, 194, 255, .15);
+}
+
+.hot-kind.valor {
+  background: rgba(69, 194, 255, .13);
+  color: #82ddff;
+}
+
+.future-coverage {
+  background:
+    radial-gradient(circle at 100% 0, rgba(69, 194, 255, .16), transparent 11rem),
+    #f7fbff !important;
+}
+
+.coverage-state.future {
+  background: #e3f3ff;
+  color: #27618e;
+}
+
+.future-coverage p {
+  color: #587086;
 }

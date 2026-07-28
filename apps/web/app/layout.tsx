@@ -5,6 +5,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MatchLab — Análisis de fútbol",
   description: "Predicciones probabilísticas de goles y córners con trazabilidad de datos.",
+  icons: {
+    icon: "/mark.svg",
+    shortcut: "/mark.svg",
+    apple: "/mark.svg",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
