@@ -35,7 +35,8 @@ jobs:
 
       - name: Install project
         run: |
-          python -m pip install --disable-pip-version-check -c backend/constraints.txt torch --index-url https://download.pytorch.org/whl/cpu
+          # Install only the CPU wheel from PyTorch; resolve all dependencies from PyPI below.
+          python -m pip install --disable-pip-version-check --no-deps -c backend/constraints.txt torch --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check -c backend/constraints.txt -e "backend[dev,learning]"
 
       - name: Lint
