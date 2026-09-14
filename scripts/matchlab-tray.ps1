@@ -1,3 +1,4 @@
+﻿param([switch]$NoBrowser)
 $ErrorActionPreference = "Stop"
 
 Add-Type -AssemblyName System.Drawing
@@ -20,10 +21,16 @@ $activationEvent = [System.Threading.EventWaitHandle]::new(
     [System.Threading.EventResetMode]::AutoReset,
     "Local\MatchLab.Tray.Activate"
 )
+$exitEvent = [System.Threading.EventWaitHandle]::new(
+    $false,
+    [System.Threading.EventResetMode]::AutoReset,
+    "Local\MatchLab.Tray.Exit"
+)
 
 if (-not $createdNew) {
     $activationEvent.Set() | Out-Null
     $activationEvent.Dispose()
+    $exitEvent.Dispose()
     $mutex.Dispose()
     exit 0
 }
@@ -141,7 +148,6 @@ function Set-TrayState {
 function Invoke-Control {
     param(
         [Parameter(Mandatory)][string]$Action,
-        [switch]$StopDocker,
         [switch]$NoBrowser
     )
 
@@ -149,9 +155,6 @@ function Invoke-Control {
         "-NoProfile -ExecutionPolicy Bypass -File `"$ControlScript`" " +
         "-Action $Action"
     )
-    if ($StopDocker) {
-        $arguments += " -StopDocker"
-    }
     if ($NoBrowser) {
         $arguments += " -NoBrowser"
     }
@@ -160,8 +163,10 @@ function Invoke-Control {
         -ArgumentList $arguments `
         -WorkingDirectory $Root `
         -WindowStyle Hidden `
-        -Wait `
         -PassThru
+    $null = $process.Handle
+    $process.WaitForExit()
+    $process.Refresh()
     return $process.ExitCode
 }
 
@@ -198,12 +203,14 @@ function Stop-ForGaming {
     $script:Busy = $true
     Set-TrayState "Busy"
     [System.Windows.Forms.Application]::DoEvents()
-    $exitCode = Invoke-Control -Action "Stop" -StopDocker -NoBrowser
+    $exitCode = Invoke-Control -Action "Stop" -NoBrowser
     if ($exitCode -eq 0) {
         Set-TrayState "Stopped"
         Show-Notice `
             "Modo juego activado" `
-            "MatchLab y Docker Desktop estan detenidos; tus datos siguen guardados."
+            "MatchLab esta detenido; los datos y modelos siguen guardados."
+        $notifyIcon.Visible = $false
+        [System.Windows.Forms.Application]::Exit()
     } else {
         Set-TrayState "Error"
         Show-Notice `
@@ -265,6 +272,11 @@ $statusTimer.Start()
 $activationTimer = New-Object System.Windows.Forms.Timer
 $activationTimer.Interval = 500
 $activationTimer.Add_Tick({
+    if ($exitEvent.WaitOne(0)) {
+        $notifyIcon.Visible = $false
+        [System.Windows.Forms.Application]::Exit()
+        return
+    }
     if ($activationEvent.WaitOne(0)) {
         Start-FromTray -OpenBrowser
     }
@@ -275,7 +287,7 @@ $startupTimer = New-Object System.Windows.Forms.Timer
 $startupTimer.Interval = 600
 $startupTimer.Add_Tick({
     $startupTimer.Stop()
-    Start-FromTray -OpenBrowser
+    Start-FromTray -OpenBrowser:(-not $NoBrowser)
 })
 $startupTimer.Start()
 
@@ -291,6 +303,7 @@ try {
         $loadedIcon.Dispose()
     }
     $activationEvent.Dispose()
+    $exitEvent.Dispose()
     $mutex.ReleaseMutex()
     $mutex.Dispose()
 }

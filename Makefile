@@ -1,33 +1,24 @@
-.PHONY: setup up down logs test lint migrate ingest demo dbt
+﻿.PHONY: setup api web test lint build train
 
 setup:
-	@test -f .env || cp .env.example .env
-	docker compose build
+	python -m pip install -c backend/constraints.txt -e "backend[dev,learning]"
+	cd frontend && npm ci
 
-up:
-	docker compose up -d --build
+api:
+	python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 
-down:
-	docker compose down
-
-logs:
-	docker compose logs -f api worker web
+web:
+	cd frontend && npm run dev
 
 test:
-	docker compose run --rm api pytest
+	cd backend && python -m pytest
 
 lint:
-	docker compose run --rm api ruff check .
+	python -m ruff check backend/app backend/tests backend/serve.py
+	python -m mypy --config-file backend/pyproject.toml backend/app
 
-migrate:
-	docker compose run --rm migrate
+build:
+	cd frontend && npm run build
 
-ingest:
-	docker compose exec api python -m football_api.cli ingest
-
-demo:
-	docker compose exec api python -m football_api.cli seed-demo
-
-dbt:
-	docker compose --profile analytics run --rm dbt build
-
+train:
+	python -m app.learning --train

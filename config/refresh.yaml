@@ -1,0 +1,14 @@
+fixtures_minutes: 30
+daily_analysis_hour: 6
+standings_minutes: 240
+stats_minutes: 360
+betfair_minutes: 5
+pulsescore_minutes: 5
+odds_stale_minutes: 15
+minimum_recent_matches: 5
+minimum_split_matches: 3
+minimum_league_matches: 30
+max_stats_requests_per_refresh: 60
+retry_attempts: 3
+circuit_failure_threshold: 3
+circuit_cooldown_seconds: 120

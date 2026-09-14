@@ -1,56 +1,40 @@
-# Arquitectura
+﻿# Arquitectura activa
 
-MatchLab es un monolito modular API-first. Los procesos se despliegan por separado, pero comparten
-modelos y una base PostgreSQL. Esto reduce la complejidad inicial sin cerrar el camino a separar
-servicios cuando exista una necesidad medida.
-
-```text
-API-Football
-    |
-    v
-Ingesta Celery ----> raw_api_responses
-    |                       |
-    v                       v
-PostgreSQL <---------- reprocesado
-    |
-    +--> feature_snapshots --> Poisson / Negative Binomial --> predictions
-    |
-    +--> dbt staging / intermediate / analytics
-    |
-    v
-FastAPI <------ Next.js
+```mermaid
+flowchart LR
+    AF[API-Football] --> FP[Proveedor futbolístico]
+    BF[Betfair Exchange] --> OP[Proveedores de cuotas]
+    PS[PulseScore Bet365 / Winamax] --> OP
+    FD[Football-Data CSV] --> DS[Dataset temporal]
+    FP --> DB[(DuckDB)]
+    OP --> MA[Matching de eventos]
+    MA --> DB
+    DB --> FE[Features anteriores al partido]
+    FE --> ST[Modelos estadísticos]
+    DS --> ML[Entrenamiento / calibración / prueba]
+    ML --> REG[Registro de modelos locales]
+    REG --> IN[Inferencia con cobertura verificada]
+    FE --> IN
+    ST --> ENS[Ensemble]
+    IN --> ENS
+    ENS --> API[FastAPI]
+    DB --> OD[Cuotas / de-vig / EV]
+    OD --> API
+    API --> UI[React / Vite]
 ```
 
-## Límites de los módulos
+`backend/app/domain` define fixtures, observaciones, mercados, cuotas, configuración y salidas de modelos. Los adaptadores HTTP viven en `providers/`; ninguna estructura JSON específica del proveedor sale del adaptador.
 
-- `packages/football_providers`: contrato con proveedores externos. El resto de la aplicación no
-  conoce URLs ni cabeceras de API-Football.
-- `apps/api/football_api/services/ingestion.py`: orquesta cargas incrementales, conserva RAW y aplica
-  límites de consumo.
-- `apps/api/football_api/services/predictions.py`: construye features point-in-time y versiona cada
-  predicción.
-- `packages/prediction_models`: matemáticas puras, sin dependencias de web o base de datos.
-- `apps/api/football_api/routes.py`: contrato HTTP consumido por web y futuras apps móviles.
-- `dbt`: transformaciones analíticas y comprobaciones de calidad fuera del camino transaccional.
+`repositories/` guarda datos normalizados y snapshots. `services/` construye features, calidad/confianza, análisis, matching y rankings. Los modelos reciben `Features`, sin cliente HTTP, claves ni precios. `learning/` comparte el contrato de features entre dataset e inferencia.
 
-## Decisiones de seguridad estadística
+DuckDB utiliza una conexión protegida por un bloqueo y **un solo proceso/worker**. Los lotes de importación históricos tienen transacciones; una importación fallida hace rollback. No hay Redis, Celery ni PostgreSQL en la aplicación activa.
 
-1. Solo se usan partidos con `kickoff_at` anterior al partido analizado.
-2. La forma reciente se pondera exponencialmente y se regulariza contra el promedio de liga.
-3. Un mercado de córners se omite cuando no hay al menos tres observaciones por lado.
-4. Los amistosos reducen la confianza automáticamente.
-5. Cada ejecución guarda features, versión del modelo y fecha de generación.
-6. No se etiqueta una predicción como apuesta. Las oportunidades de valor exigen cuotas y un mínimo
-   de confianza, y aun así necesitan backtesting temporal antes de usarse con dinero.
-7. Los mercados derivados y las visualizaciones se recalculan desde los parámetros almacenados; no
-   duplican estado ni requieren migraciones para enriquecer predicciones históricas.
-8. El valor esperado usa una probabilidad conservadora regularizada hacia `1/3` en 1X2 y `1/2` en
-   mercados binarios según la confianza de datos.
-9. Las cuotas justas se presentan como referencia matemática sin margen y nunca como precio de
-   entrada ni recomendación de tamaño de apuesta.
+La aplicación conserva snapshots de predicciones y precios. Las selecciones suspendidas se eliminan de la vista actual mediante snapshots de disponibilidad, sin borrar su historial. El emparejamiento exige equipos, competición, proximidad horaria y ausencia de ambigüedad; guarda aliases e identificadores por proveedor/casa.
 
-## Camino a producción
+La aplicación se inicia y se detiene manualmente. Mientras está abierta, el programador interno comprueba cada 30 segundos qué trabajo vence. Existe un ciclo diario persistente para **partidos y análisis** y otro para actualizar CSV. Los refrescos de fútbol se serializan; si se solicita hoy durante un trabajo de otra fecha, queda en cola. No hay tareas de Windows instaladas ni actividad con la aplicación detenida. El script de actualización puntual solo ejecuta su worker cuando el usuario lo solicita.
 
-PostgreSQL puede migrarse a RDS, Neon o Supabase; Redis a un servicio gestionado; API y workers a
-servicios de contenedores; Next.js a Vercel. Antes de compartir el sistema deben añadirse identidad,
-roles, rate limiting, secretos gestionados, observabilidad, copias de seguridad y términos legales.
+El entrenamiento automático está desactivado. El entrenamiento manual usa un hilo de trabajo y dos hilos de cálculo por modelo; el servidor puede seguir atendiendo consultas. Los artefactos se publican mediante un puntero reemplazado de forma atómica, después de validar su recarga. El apagado normal de Uvicorn espera al aprendizaje; el comando **Detener MatchLab** finaliza los procesos del proyecto, incluidos los workers, para liberar sus recursos inmediatamente. Un entrenamiento interrumpido no sustituye el modelo publicado.
+
+El frontend recibe exclusivamente los contratos de la API. Hay rutas Today, Top Picks, Goals, Corners, Odds, Match Detail, Model Lab, Performance y Settings. El sondeo de la interfaz lee caché local; no implica una petición al proveedor por cada componente.
+
+Los servicios se enlazan a localhost. Se comprueban Host y Origin en mutaciones, se restringe CORS y se evitan credenciales en logs y respuestas. Betfair tiene una lista explícita de operaciones de lectura. El código del stack anterior se ha retirado; sus datos locales no se migran ni se publican automáticamente.

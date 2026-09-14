@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: pip
-    directory: /
+    directory: /backend
     schedule:
       interval: weekly
       day: monday
@@ -15,7 +15,7 @@ updates:
         dependency-type: development
 
   - package-ecosystem: npm
-    directory: /apps/web
+    directory: /frontend
     schedule:
       interval: weekly
       day: monday
@@ -27,15 +27,6 @@ updates:
         dependency-type: production
       node-development:
         dependency-type: development
-
-  - package-ecosystem: docker
-    directory: /infrastructure/docker
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:30"
-      timezone: Europe/Madrid
-    open-pull-requests-limit: 3
 
   - package-ecosystem: github-actions
     directory: /

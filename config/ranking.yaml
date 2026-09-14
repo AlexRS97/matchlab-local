@@ -1,0 +1,14 @@
+defaults:
+  top_n: 5
+  minimum_odds: 1.35
+  minimum_confidence: MEDIUM
+  minimum_data_quality: ACCEPTABLE
+  status: [NOT_STARTED]
+markets:
+  OVER_1_5_GOALS: {enabled: true}
+  OVER_2_5_GOALS: {enabled: true, minimum_odds: 1.35}
+  OVER_3_5_GOALS: {enabled: true}
+  BTTS_YES: {enabled: true}
+  OVER_8_5_CORNERS: {enabled: true}
+  OVER_9_5_CORNERS: {enabled: true}
+  OVER_10_5_CORNERS: {enabled: true}

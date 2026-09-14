@@ -1,0 +1,21 @@
+api_football:
+  enabled: true
+betfair:
+  enabled: true
+  source: official
+bet365:
+  enabled: true
+  source: pulsescore
+winamax:
+  enabled: true
+  source: pulsescore
+pulsescore:
+  enabled: true
+  betfair_fallback: false
+  # Orbit Exchange is labelled explicitly; it is not Betfair Sportsbook.
+  prefixes:
+    BET365: /api/v3/bet365
+    WINAMAX: /api/winamax/soccer
+    BETFAIR: /api/orbitxch/soccer
+ollama:
+  enabled: false

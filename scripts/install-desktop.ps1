@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$Launch
 )
 
@@ -7,7 +7,7 @@ $Root = Split-Path -Parent $PSScriptRoot
 $TrayScript = Join-Path $PSScriptRoot "matchlab-tray.ps1"
 $ApplicationDirectory = Join-Path $env:LOCALAPPDATA "MatchLab"
 $IconPath = Join-Path $ApplicationDirectory "MatchLab.ico"
-$LogoPath = Join-Path $Root "apps\web\public\matchlab-logo.png"
+$LogoPath = Join-Path $Root "assets\matchlab-logo.png"
 $PowerShell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 
 New-Item -ItemType Directory -Path $ApplicationDirectory -Force | Out-Null
@@ -63,7 +63,18 @@ $shortcut.Description = "Inicia MatchLab y lo controla desde la bandeja de Windo
 $shortcut.WindowStyle = 7
 $shortcut.Save()
 
+$stopShortcutPath = Join-Path $desktop "Detener MatchLab.lnk"
+$stopShortcut = $shell.CreateShortcut($stopShortcutPath)
+$stopShortcut.TargetPath = $PowerShell
+$stopShortcut.Arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + (Join-Path $Root 'scripts\stop.ps1') + '"'
+$stopShortcut.WorkingDirectory = $Root
+$stopShortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,27"
+$stopShortcut.Description = "Cierra MatchLab y sus trabajos antes de jugar; conserva datos y modelos"
+$stopShortcut.WindowStyle = 7
+$stopShortcut.Save()
+
 Write-Host "Acceso directo creado: $shortcutPath" -ForegroundColor Green
+Write-Host "Acceso directo de cierre: $stopShortcutPath" -ForegroundColor Green
 Write-Host "Icono de bandeja instalado: $IconPath" -ForegroundColor Green
 
 if ($Launch) {

@@ -30,8 +30,6 @@ datos o predicción debe actualizar el documento técnico correspondiente.
 ## Comprobaciones locales
 
 ```powershell
-docker compose exec -T -e RUFF_CACHE_DIR=/tmp/ruff api ruff check apps/api packages tests
-docker compose exec -T -e MYPY_CACHE_DIR=/tmp/mypy api mypy apps/api packages
-docker compose exec -T api pytest -p no:cacheprovider
-docker compose build
+.\scripts\check.ps1
+.\scripts\security-check.ps1
 ```

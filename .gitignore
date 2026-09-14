@@ -10,12 +10,7 @@ __pycache__/
 .coverage
 htmlcov/
 node_modules/
-.next/
 dist/
-dbt/logs/
-dbt/target/
-dbt/dbt_packages/
-dbt/.user.yml
 *.log
 *.pem
 *.key
@@ -35,3 +30,18 @@ security-reports/
 .idea/
 .vscode/
 .DS_Store
+.tools/
+.runtime/
+*.duckdb
+*.duckdb.wal
+*.tsbuildinfo
+data/
+!data/.gitkeep
+# MatchLab ignore additions
+*.egg-info/
+playwright-report/
+test-results/
+# Copia local antigua cuyo borrado fue bloqueado; el proyecto usa assets/.
+/apps/
+# Salidas locales del stack retirado; nunca forman parte del nuevo proyecto.
+/dbt/

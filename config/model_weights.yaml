@@ -1,0 +1,13 @@
+goals:
+  poisson: 0.20
+  dixon_coles: 0.10
+  negative_binomial: 0.10
+  recent_form: 0.20
+  home_away: 0.20
+  xg: 0.15
+  external: 0.05
+corners:
+  negative_binomial: 0.35
+  poisson: 0.20
+  recent_form: 0.25
+  home_away: 0.20

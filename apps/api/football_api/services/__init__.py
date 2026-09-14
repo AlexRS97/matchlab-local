@@ -1,2 +1,0 @@
-"""Servicios de aplicacion."""
-

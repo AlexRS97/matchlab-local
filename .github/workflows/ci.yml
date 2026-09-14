@@ -31,18 +31,21 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: backend/constraints.txt
 
       - name: Install project
-        run: python -m pip install --disable-pip-version-check ".[dev]"
+        run: |
+          python -m pip install --disable-pip-version-check -c backend/constraints.txt torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check -c backend/constraints.txt -e "backend[dev,learning]"
 
       - name: Lint
-        run: ruff check apps/api packages tests
+        run: ruff check backend/app backend/tests backend/serve.py
 
       - name: Type check
-        run: mypy apps/api packages
+        run: mypy --config-file backend/pyproject.toml backend/app
 
       - name: Test
-        run: pytest
+        run: cd backend && pytest
 
   frontend:
     name: Frontend build
@@ -50,7 +53,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: apps/web
+        working-directory: frontend
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,26 +65,24 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install locked dependencies
-        run: npm ci --omit=optional
+        run: npm ci
 
       - name: Build production bundle
         run: npm run build
 
-  containers:
-    name: Container builds
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python for browser scenario
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          persist-credentials: false
+          python-version: "3.12"
 
-      - name: Build API image
-        run: docker build --file infrastructure/docker/api.Dockerfile --tag matchlab-api:ci .
+      - name: Prepare isolated browser scenario
+        run: |
+          python -m pip install -c ../backend/constraints.txt -e "../backend[dev]"
+          python ../backend/tests/export_ui_scenario.py
+          npx playwright install --with-deps chromium
 
-      - name: Build web image
-        run: docker build --file infrastructure/docker/web.Dockerfile --tag matchlab-web:ci .
+      - name: Browser tests
+        run: npx playwright test

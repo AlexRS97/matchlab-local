@@ -1,85 +1,48 @@
-# Arquitectura de seguridad
+# Seguridad de la aplicación local
 
-## Principios
+La versión activa ejecuta FastAPI y React/Vite en loopback y guarda datos en DuckDB.
+No incorpora cuentas de usuario y está destinada al uso personal local.
 
-1. **Privado por defecto.** El código y los datos operativos no se publican.
-2. **Mínimo privilegio.** Procesos, tokens y flujos CI reciben solo los permisos necesarios.
-3. **Secretos fuera de Git.** `.env` y credenciales reales nunca se versionan.
-4. **Defensa en profundidad.** Validación, aislamiento de contenedores, auditoría de dependencias y
-   controles del repositorio se complementan; ninguno se considera suficiente por sí solo.
-5. **Trazabilidad.** Cambios por pull request, commits identificables y comprobaciones reproducibles.
-6. **Fallo seguro.** En producción una configuración insegura debe impedir el arranque, no degradar
-   silenciosamente la protección.
-
-## Activos
-
-- Código fuente, modelos probabilísticos y reglas de recomendación.
-- Clave de API-Football, credenciales de base de datos y futuros tokens de despliegue.
-- Histórico de partidos, snapshots de features, predicciones y cuotas.
-- Identidad visual, documentación técnica y decisiones de arquitectura.
-- Integridad de imágenes de contenedor y dependencias.
-
-## Fronteras de confianza
+## Fronteras y controles implementados
 
 ```text
-Internet / proveedor
-        |
-        v
-API-Football client -- validación y presupuesto de llamadas
-        |
-        v
-worker / beat ---- Redis interno
-        |
-        v
-PostgreSQL interno
-        |
-        v
-FastAPI (127.0.0.1:8000) <----> Next.js (127.0.0.1:3000)
+API-Football / Betfair / PulseScore / Football-Data
+                     |
+         adaptadores HTTP, validación y caché
+                     |
+        FastAPI 127.0.0.1:8000 ---- DuckDB local
+                     |
+           React/Vite 127.0.0.1:3000
 ```
 
-PostgreSQL y Redis no publican puertos al host. API y web solo se enlazan a loopback en el perfil
-local. Los contenedores de aplicación usan usuarios sin privilegios y `no-new-privileges`.
+El backend guarda las claves como configuración privada y devuelve únicamente su estado de
+disponibilidad. `.env`, certificados, bases de datos y artefactos quedan fuera de Git.
+Los logs de transporte no incluyen cabeceras de autenticación ni cuerpos con secretos.
 
-## Controles del repositorio
+FastAPI restringe hosts y orígenes del navegador y rechaza mutaciones procedentes de orígenes
+ajenos. Añade cabeceras contra interpretación de tipos y carga en marcos. Estos controles no
+sustituyen una autenticación para acceso remoto.
 
-- repositorio privado y acceso explícito;
-- licencia propietaria y avisos de terceros;
-- `CODEOWNERS` para exigir revisión del propietario;
-- CI con permisos de solo lectura;
-- acciones externas fijadas por SHA completo;
-- pruebas, Ruff, mypy, compilación de Next.js y auditorías de dependencias;
-- Gitleaks sobre el historial;
-- Dependabot semanal con límite de pull requests;
-- política de divulgación privada;
-- reglas de rama/ruleset para `main`, cuando el plan de GitHub lo permita.
+Betfair utiliza una lista de operaciones de consulta permitidas; no hay operaciones de órdenes.
+Las respuestas externas se validan antes de usarse. Timeouts, reintentos acotados, presupuestos y
+circuit breaker contienen los fallos de proveedores. Una asociación ambigua entre eventos no
+adjunta cuotas al partido.
 
-## Gestión de secretos
+Los scripts de arranque no reemplazan servicios ajenos que ocupen los puertos. El cierre identifica
+procesos de este proyecto por su ruta absoluta y sus descendientes. La configuración actual es
+manual, sin inicio con Windows ni tareas instaladas. El worker puntual reutiliza la API si está
+activa para evitar un segundo proceso conectado a DuckDB; véase la guía de Windows.
 
-Desarrollo local usa `.env`, ignorado por Git. Producción no debe utilizar archivos persistentes con
-credenciales: debe inyectarlas desde un gestor como AWS Secrets Manager, Azure Key Vault, Google
-Secret Manager, Doppler o el mecanismo equivalente del proveedor elegido.
+Los modelos de árboles se guardan en formatos nativos y PyTorch carga pesos con `weights_only`.
+Solo deben cargarse artefactos producidos por este proyecto y conservados bajo control del usuario.
+El identificador de la versión se valida antes de formar la ruta. Las pruebas utilizan almacenes
+aislados y no insertan datos de demostración en la base operativa.
 
-Las credenciales deben ser distintas por entorno, rotables, de alcance mínimo y sin exposición en
-variables `NEXT_PUBLIC_*`. Una variable con ese prefijo puede terminar en el navegador y nunca debe
-contener un secreto.
+## Operación
 
-## Riesgos pendientes antes de Internet
+Mantén las credenciales en `.env` de la raíz o `backend/.env`, nunca en variables `VITE_*`.
+Si una clave se expone, revócala en su proveedor y reinicia con una nueva. Para copiar DuckDB
+coherentemente, detén el backend y copia `data/`.
 
-El producto actual no incorpora cuentas de usuario. Por tanto, los endpoints administrativos solo
-son aceptables porque la API se expone en loopback. Antes de un despliegue público se debe:
-
-1. separar API pública y plano administrativo;
-2. autenticar mediante OIDC y autorizar por roles;
-3. añadir rate limiting por identidad y dirección;
-4. proteger tareas costosas contra repetición e idempotencia incorrecta;
-5. aplicar TLS, HSTS y cabeceras desde un proxy de confianza;
-6. cifrar copias de seguridad y probar restauraciones;
-7. centralizar logs sin secretos y crear alertas;
-8. realizar SAST/DAST y pentest independiente;
-9. definir retención y borrado de datos;
-10. revisar términos del proveedor, privacidad y normativa de juego aplicable.
-
-## Respuesta a incidentes
-
-La secuencia mínima es contener, revocar, preservar evidencias, corregir, recuperar, verificar y
-documentar. Nunca se debe reutilizar una clave expuesta aunque se haya eliminado del repositorio.
+Exponer esta aplicación a Internet requeriría autenticación, autorización, TLS y una revisión
+del modelo de despliegue. La configuración actual no pretende cubrir ese escenario.

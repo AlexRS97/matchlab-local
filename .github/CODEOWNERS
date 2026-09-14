@@ -7,6 +7,6 @@
 /SECURITY.md @AlexRS97
 /LICENSE @AlexRS97
 /NOTICE.md @AlexRS97
-/infrastructure/ @AlexRS97
-/migrations/ @AlexRS97
-/packages/prediction_models/ @AlexRS97
+/backend/app/models/ @AlexRS97
+/backend/app/learning/ @AlexRS97
+/config/ @AlexRS97

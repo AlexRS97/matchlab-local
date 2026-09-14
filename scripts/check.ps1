@@ -1,52 +1,24 @@
-$ErrorActionPreference = "Stop"
-$Root = Split-Path -Parent $PSScriptRoot
-Set-Location $Root
-
-$DockerCommand = Get-Command docker -ErrorAction SilentlyContinue
-$Docker = if ($DockerCommand) {
-    $DockerCommand.Source
-} elseif (Test-Path "C:\Program Files\Docker\Docker\resources\bin\docker.exe") {
-    "C:\Program Files\Docker\Docker\resources\bin\docker.exe"
-} else {
-    $null
-}
-
-if (-not $Docker) {
-    Write-Host "Docker no esta disponible. Instala Docker Desktop para ejecutar la validacion." -ForegroundColor Red
-    exit 1
-}
-
+﻿$ErrorActionPreference = 'Stop'
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+$NodeDirectory = Join-Path $ProjectRoot '.tools\node-v22.16.0-win-x64'
+if (Test-Path -LiteralPath $NodeDirectory) { $env:PATH = $NodeDirectory + ';' + $env:PATH }
+$Python = Join-Path $ProjectRoot 'backend\.venv\Scripts\python.exe'
 $ParserErrors = @()
-Get-ChildItem (Join-Path $Root "scripts") -Filter "*.ps1" | ForEach-Object {
-    $Tokens = $null
-    $FileErrors = $null
-    [System.Management.Automation.Language.Parser]::ParseFile(
-        $_.FullName,
-        [ref]$Tokens,
-        [ref]$FileErrors
-    ) | Out-Null
-    $ParserErrors += $FileErrors
+Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' | ForEach-Object {
+    $tokens=$null; $errors=$null
+    [System.Management.Automation.Language.Parser]::ParseFile($_.FullName,[ref]$tokens,[ref]$errors) | Out-Null
+    $ParserErrors += $errors
 }
-if ($ParserErrors.Count -gt 0) {
-    $ParserErrors | Format-List
-    exit 1
-}
-
-& $Docker compose config --quiet
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-& $Docker compose build api migrate worker beat web
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-& $Docker compose run --rm -e RUFF_CACHE_DIR=/tmp/ruff api `
-    ruff check apps/api packages migrations tests
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-& $Docker compose run --rm -e MYPY_CACHE_DIR=/tmp/mypy api `
-    mypy apps/api packages
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-& $Docker compose run --rm api pytest -p no:cacheprovider
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-Write-Host "Scripts, configuracion, compilacion, lint, tipos y tests completados." -ForegroundColor Green
+if ($ParserErrors.Count) { $ParserErrors | Format-List; exit 1 }
+Push-Location (Join-Path $ProjectRoot 'backend')
+try {
+    & $Python -m ruff check app tests serve.py
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & $Python -m mypy app
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    & $Python -m pytest -o cache_dir=../.runtime/pytest-cache
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+} finally { Pop-Location }
+Push-Location (Join-Path $ProjectRoot 'frontend')
+try { & npm.cmd run build; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } } finally { Pop-Location }
+Write-Host 'Lint, tipos, pruebas y compilacion correctos.' -ForegroundColor Green

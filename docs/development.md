@@ -1,59 +1,52 @@
-# Guía técnica de desarrollo
+# Desarrollo de MatchLab local
 
-## Criterio para comentarios
-
-Un comentario profesional explica aquello que el código no puede expresar por sí mismo:
-
-- invariantes de negocio;
-- decisiones de seguridad;
-- regularización o supuestos estadísticos;
-- comportamiento temporal y zonas horarias;
-- límites de proveedores y efectos laterales;
-- razones por las que una alternativa aparentemente sencilla no es válida.
-
-No se repite con texto una asignación, condición o nombre claro. Los comentarios obsoletos son un
-riesgo: todo cambio debe actualizar código, pruebas y documentación en el mismo pull request.
+El código activo está en `backend/`, `frontend/` y `config/`. El historial Git conserva la implementación retirada.
 
 ## Capas
 
-- `packages/prediction_models`: funciones matemáticas puras y deterministas.
-- `packages/football_providers`: adaptadores HTTP; no contienen reglas del producto.
-- `services/ingestion.py`: orquestación, cuotas de proveedor y persistencia incremental.
-- `services/predictions.py`: features point-in-time y persistencia de versiones.
-- `services/recommendations.py`: presentación conservadora de señales y valor.
-- `routes.py` y `schemas.py`: contrato HTTP, sin matemáticas duplicadas.
-- `apps/web`: composición visual y consumo tipado del contrato.
-- `dbt`: modelos analíticos fuera del camino transaccional.
+- `backend/app/domain`: contratos de partidos, mercados, cuotas y predicciones.
+- `backend/app/providers`: normalización y acceso a las fuentes externas.
+- `backend/app/repositories` y `db`: snapshots, caché, resultados y acceso serializado a DuckDB.
+- `backend/app/models`: cálculos estadísticos independientes de HTTP y precios.
+- `backend/app/learning`: datasets, entrenamiento, calibración, evaluación e inferencia local.
+- `backend/app/services` y `jobs`: orquestación, análisis, ranking y actualización diaria.
+- `backend/app/api`: rutas FastAPI; `frontend/src`: presentación y contratos TypeScript.
 
-## Reglas de diseño
+## Ejecución y comprobaciones
 
-- Las predicciones solo utilizan información conocida antes de `kickoff_at`.
-- Toda operación externa debe definir timeout y traducir errores del proveedor.
-- Las escrituras repetibles deben ser idempotentes o usar claves naturales.
-- El dinero, si se incorpora, utiliza tipos decimales y nunca `float`.
-- Las fechas persistidas son UTC; la presentación aplica `Europe/Madrid`.
-- No se registra el cuerpo de solicitudes que pueda contener credenciales.
-- Una recomendación no se representa como certeza ni se genera sin umbral de calidad.
+Consulta [setup_windows.md](setup_windows.md) para instalar y arrancar. Para desarrollar,
+usa Uvicorn con recarga en el puerto 8000 y `npm run dev` en `frontend/`, puerto 3000.
+Para validar desde la raíz:
 
-## Definición de terminado
+```powershell
+.\scripts\check.ps1
+```
 
-Un cambio está terminado cuando:
+Comprueba sintaxis de PowerShell, Ruff, mypy, pytest y compilación TypeScript/Vite.
+Las pruebas usan DuckDB en memoria y directorios temporales para no tocar datos o modelos reales.
+La prueba de navegador se prepara con `backend/tests/export_ui_scenario.py` y se ejecuta con
+Playwright según el README. Sus respuestas simuladas se interceptan solo en el navegador de prueba.
 
-1. tiene pruebas proporcionales al riesgo;
-2. Ruff, mypy, pytest y la compilación web pasan;
-3. no añade vulnerabilidades altas conocidas ni secretos;
-4. actualiza contratos y documentación;
-5. incluye migración reversible si cambia el esquema;
-6. mantiene el modo demostración;
-7. ha sido revisado en escritorio y móvil si modifica la interfaz.
+`backend/constraints.txt` fija las versiones verificadas de Python; se usa junto a los extras del
+proyecto, sin obligar a instalar dependencias que no correspondan. Se valida en Windows y en CI.
+`frontend/package-lock.json` fija las dependencias web. Al actualizarlas, repetir pruebas y auditorías.
 
-## Versionado
+La auditoría nativa requiere [Gitleaks](https://github.com/gitleaks/gitleaks) en PATH o en
+`.tools/gitleaks/gitleaks.exe`. Ejecutar `scripts/security-check.ps1 -ExternalAudits` comprueba
+historial, cambios preparados, archivos privados y vulnerabilidades Python/npm. Las auditorías
+externas transmiten nombres y versiones de paquetes a los servicios de vulnerabilidades.
 
-Se recomienda SemVer:
+## Invariantes
 
-- `MAJOR`: cambio incompatible de API o modelo persistido;
-- `MINOR`: función compatible;
-- `PATCH`: corrección compatible.
+- Un proceso de backend posee DuckDB; no iniciar otro worker o CLI contra la misma base.
+- Persistir tiempos UTC; formar jornadas y horarios diarios con `Europe/Madrid`.
+- Las observaciones de una predicción deben estar disponibles antes del saque inicial.
+- Separar probabilidad, confianza, calidad y comparación de mercado.
+- Mantener ausencias como ausencias; no convertir valores faltantes en ceros ni crear xG ficticio.
+- Conservar los precios históricos y el primer pronóstico publicado utilizado por Performance.
+- No registrar secretos ni enviar configuración de credenciales al navegador.
+- Explicar supuestos estadísticos y decisiones temporales en comentarios; evitar repetir el código.
 
-Las versiones de producción deben usar tags firmados y notas de cambios. Las imágenes deben
-publicarse por digest y conservar un SBOM.
+Un cambio debe mantener contratos y documentación coherentes y superar comprobaciones
+proporcionales a su impacto. Los artefactos ML son locales, versionados por ejecución y excluidos
+de Git; publicar un candidato requiere guardar su evaluación y superar los controles configurados.
