@@ -74,6 +74,11 @@ Los reportes completos incluyen log loss, calibración, métricas por mercado y 
 - Gitleaks no encontró secretos en 19 commits previos ni en los cambios preparados. Auditorías
   Python y npm sin vulnerabilidades conocidas en el momento de la comprobación.
 - Existen avisos de deprecación en bibliotecas de pruebas y LightGBM; no fallaron los checks.
+- [CI en GitHub/Linux](https://github.com/AlexRS97/matchlab-local/actions/runs/34881196064)
+  superado: instalación con versiones fijadas, Ruff, mypy, pytest, compilación y navegador.
+  Se corrigió la instalación de PyTorch CPU para resolver sus dependencias desde PyPI.
+- El controlador del acceso directo también comprueba cambios del código web antes de abrir;
+  se verificó que reutiliza el bundle vigente y que el cierre termina sus procesos.
 
 La revisión automática bloqueó eliminar la copia antigua del logo. Se excluyó del índice y de
 la publicación; no se usa desde la aplicación. Véase [revisión](review.md).

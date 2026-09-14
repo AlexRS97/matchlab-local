@@ -5,7 +5,7 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PowerShellExe = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 function Start-App {
     $script = Join-Path $PSScriptRoot 'start.ps1'
-    $process = Start-Process -FilePath $PowerShellExe -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -File "' + $script + '" -NoBrowser -NoBuild') -WorkingDirectory $ProjectRoot -WindowStyle Hidden -PassThru
+    $process = Start-Process -FilePath $PowerShellExe -ArgumentList ('-NoProfile -ExecutionPolicy Bypass -File "' + $script + '" -NoBrowser') -WorkingDirectory $ProjectRoot -WindowStyle Hidden -PassThru
     $null = $process.Handle
     $process.WaitForExit()
     $process.Refresh()
