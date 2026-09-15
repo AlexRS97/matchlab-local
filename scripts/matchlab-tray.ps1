@@ -9,6 +9,7 @@ $ControlScript = Join-Path $PSScriptRoot "matchlab-control.ps1"
 $PowerShell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 $IconPath = Join-Path $env:LOCALAPPDATA "MatchLab\MatchLab.ico"
 $script:Busy = $false
+$script:LastCompletion = ''
 
 $createdNew = $false
 $mutex = [System.Threading.Mutex]::new(
@@ -106,6 +107,27 @@ function Test-MatchLab {
     }
 }
 
+function Show-CompletionNotice {
+    try {
+        $snapshot = Invoke-RestMethod 'http://127.0.0.1:8000/api/refresh/status' -TimeoutSec 2
+        if (-not $snapshot.job.progress -or -not $snapshot.learning.progress) { return }
+        $jobs = @($snapshot.job, $snapshot.learning, $snapshot.odds) | Where-Object { $_ -and $_.progress }
+        if (@($jobs | Where-Object { $_.running }).Count) { return }
+        # Notify once per data/model cycle; standalone odds refreshes do not repeat the balloon.
+        $key = @($snapshot.job.started_at, $snapshot.job.finished_at, $snapshot.learning.started_at, $snapshot.learning.finished_at) -join '|'
+        if ($key -eq $script:LastCompletion) { return }
+        $script:LastCompletion = $key
+        $warnings = @($jobs | Where-Object { $_.errors.Count -gt 0 -or $_.status -in @('partial','failed','cancelled') }).Count -gt 0
+        if ($warnings) {
+            Show-Notice 'Actualizacion finalizada con avisos' 'Revisa los avisos de las fuentes o del entrenamiento en MatchLab.' ([System.Windows.Forms.ToolTipIcon]::Warning)
+        } else {
+            Show-Notice 'MatchLab preparado' 'Datos, modelos y analisis terminados. Ya puedes consultar los resultados.'
+        }
+    } catch {
+        # The next timer tick retries if the API is temporarily unavailable.
+    }
+}
+
 function Set-TrayState {
     param([ValidateSet("Running", "Stopped", "Busy", "Error")][string]$State)
 
@@ -182,7 +204,7 @@ function Start-FromTray {
     $exitCode = Invoke-Control -Action "Start" -NoBrowser
     if ($exitCode -eq 0) {
         Set-TrayState "Running"
-        Show-Notice "MatchLab preparado" "La aplicacion ya esta funcionando."
+        Show-Notice "MatchLab abierto" "Actualizando datos y revisando modelos. Te avisare al terminar."
         if ($OpenBrowser) {
             Start-Process "http://localhost:3000"
         }
@@ -262,6 +284,7 @@ $statusTimer.Add_Tick({
     if (-not $script:Busy) {
         if (Test-MatchLab) {
             Set-TrayState "Running"
+            Show-CompletionNotice
         } else {
             Set-TrayState "Stopped"
         }

@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from app.core.config import read_config
+from app.core.resources import resolve_threads
 from app.db.connection import Database, encode
 from app.jobs.progress import JobProgress
 from app.learning.dataset import build_dataset, chronological_split
@@ -28,6 +29,7 @@ def train(
 ) -> dict:
     from app.learning.deep import DeepModel
 
+    config = {**config, "threads": resolve_threads(config.get("threads"))}
     run_id = uuid.uuid4().hex
     run_dir = directory / run_id
     run_dir.mkdir(parents=True, exist_ok=False)

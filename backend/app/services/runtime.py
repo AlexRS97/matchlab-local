@@ -67,6 +67,23 @@ class AnalyticsRuntime:
         self.job: dict = {"running": False, "errors": [], "completed": 0, "total": 0}
         self.progress: JobProgress | None = None
         self.odds_job: dict = {"running": False, "errors": [], "kind": "odds"}
+        self.learning.on_trained = self.reanalyse_after_training
+
+    async def reanalyse_after_training(self, progress):
+        # Serialize with data refresh so a previous calculation cannot overwrite the new model.
+        async with self.refresh_lock:
+            target = datetime.now(self.settings.timezone).date()
+            fixtures = self.fixtures.for_date(target)
+            for index, fixture in enumerate(fixtures):
+                await self.pipeline.calculate(fixture, force=True)
+                progress(index + 1, len(fixtures), f"{fixture.home_team} · {fixture.away_team}")
+            settings = self.user_settings.get()
+            self.performance.record(self.dashboard.rows(target, settings))
+            for market, picks in self.dashboard.today(target, settings)["top_groups"].items():
+                self.db.execute(
+                    "INSERT OR REPLACE INTO daily_rankings VALUES (?,?,?,?)",
+                    [target, market, datetime.now(UTC), encode(picks)],
+                )
 
     def start_refresh(self, target: date, force_analysis: bool = False) -> dict:
         if self.task and not self.task.done():

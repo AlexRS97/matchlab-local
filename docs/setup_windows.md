@@ -46,7 +46,7 @@ No mantengas el servidor del arranque nativo abierto a la vez que otro backend c
 Abre **MatchLab** desde el escritorio o ejecuta `start.ps1`. Para cerrar el proyecto, usa
 **Detener MatchLab**, `stop.ps1` o **Detener para jugar** en la bandeja. Se cierran el servidor,
 la web, los trabajos del proyecto y la bandeja. Los datos y modelos publicados se conservan;
-si interrumpes un entrenamiento, ese trabajo no termina ni reemplaza la versión publicada.
+si interrumpes un entrenamiento antes de su publicación, se conserva la versión anterior.
 
 Cerrar la pestaña del navegador no detiene el backend. Antes de jugar, utiliza el cierre anterior
 y cierra también la pestaña. El proyecto no inicia con Windows y no tiene una tarea diaria instalada.
@@ -62,8 +62,7 @@ Para crear los dos accesos directos en otra instalación:
 Al abrir MatchLab se revisa la jornada. El ciclo diario vence a las 06:00 Europe/Madrid y se
 recupera al siguiente arranque si el programa estaba cerrado. Mientras permanece abierto hay
 actualizaciones adicionales de datos y análisis; detenido, no realiza ningún trabajo.
-`GET /api/refresh/status` muestra el estado del ciclo. El entrenamiento automático está desactivado:
-en Model Lab puedes pulsar **Entrenar modelos** cuando quieras dedicar recursos a esa tarea.
+`GET /api/refresh/status` muestra el estado del ciclo. El histórico y los modelos se revisan al abrir; si cambió el histórico, falta un modelo o caducó, se entrenan automáticamente. Sin novedades se conserva la versión vigente. La barra global incluye datos, modelos y análisis; la aplicación y la bandeja avisan al finalizar, indicando posibles errores. En Model Lab puedes forzar la revisión con **Entrenar modelos**.
 
 ```powershell
 # Actualizacion puntual solicitada manualmente
@@ -73,7 +72,7 @@ en Model Lab puedes pulsar **Entrenar modelos** cuando quieras dedicar recursos 
 El comando anterior puede ejecutar un worker temporal con la aplicación cerrada porque lo has
 solicitado explícitamente; termina al finalizar y `stop.ps1` también puede detenerlo.
 `config/refresh.yaml` controla la hora diaria interna y los intervalos. `config/learning.yaml`
-configura el histórico, el entrenamiento manual y sus dos hilos de cálculo por modelo.
+configura el histórico y el entrenamiento automático mientras está abierto. `threads: auto` permite aprovechar todos los procesadores disponibles mientras está abierto; la prioridad de Windows es normal. **Detener MatchLab** termina también un entrenamiento en curso, de modo que no sigue consumiendo recursos al cerrar.
 
 ## Diagnóstico
 

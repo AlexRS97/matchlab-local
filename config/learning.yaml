@@ -4,12 +4,14 @@ leagues: [E0, D1, SP1, I1, F1]
 seasons: ["2021", "2122", "2223", "2324", "2425", "2526", "2627"]
 daily_update_hour: 6
 minimum_samples: 1200
-minimum_new_samples: 150
-retrain_days: 7
-# Los datos se actualizan al abrir; entrenar requiere pulsar el boton de Model Lab.
-automatic_training: false
+minimum_new_samples: 1
+retrain_days: 1
+# Solo se ejecuta con la aplicación abierta o un worker solicitado manualmente.
+# Se conservan los modelos vigentes si la revisión de datos no ha cambiado.
+automatic_training: true
 seed: 42
-threads: 2
+# Usa todos los procesadores disponibles al abrir; el cierre termina todos los trabajos.
+threads: auto
 trees: 180
 deep_epochs: 35
 batch_size: 256

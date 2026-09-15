@@ -20,10 +20,10 @@ generados de dbt también se excluyen de la publicación.
 | Reimportar todos los CSV reescribía filas sin cambios | Huella del contenido normalizado y reemplazo atómico de cada liga/temporada; una repetición sin cambios no escribe partidos |
 | Un CSV truncado o duplicado podía degradar el histórico | Rechazo de duplicados y reducción de filas, rollback y conservación del último CSV válido |
 | Una corrección de fecha dejaba un partido antiguo | Sustitución de la partición completa validada, sin duplicar el encuentro corregido |
-| Poca visibilidad de la cobertura | Último resultado y número de partidos por liga, nuevos partidos desde el entrenamiento, edad del modelo y recomendación de entrenamiento manual |
+| Poca visibilidad de la cobertura | Último resultado y número de partidos por liga, nuevos partidos desde el entrenamiento, edad del modelo y recomendación y revisión automática de los modelos |
 | Artefactos difíciles de reproducir | Huellas de datos y código, versiones de bibliotecas, configuración, semilla y periodos guardados por ejecución |
 | Repetición de inferencias y compilación al abrir | Caché acotada por versión, liga y variables; reutilización de la web compilada mientras no cambien sus fuentes |
-| Competencia por CPU | Dos hilos de cálculo y DuckDB, prioridad baja en Windows, redes en CPU y entrenamiento manual |
+| Recursos mientras se utiliza | Por preferencia actualizada del usuario: todos los procesadores disponibles, prioridad normal y entrenamiento automático cuando hay novedades; cierre completo al terminar |
 | Performance mezclaba probabilidades pendientes y resueltas | Media, Brier y log loss sobre los mismos partidos resueltos; intervalo Wilson del 95% y aceptación de resultados corregidos |
 | Automatizaciones del stack retirado | CI de backend/web/navegador, auditorías nativas, versiones Python verificadas y dependencias web fijadas |
 

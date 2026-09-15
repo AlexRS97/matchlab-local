@@ -91,6 +91,7 @@ interface State {
   };
   historical_matches: number;
   config: {
+    threads?: number;
     automatic_training: boolean;
     daily_update_hour: number;
     retrain_days: number;
@@ -213,7 +214,12 @@ export function Learning() {
         <section className="panel detail-section">
           <div className="section-heading">
             <h2>Estado de los datos y modelos</h2>
-            <span className="subtle">Entrenamiento manual</span>
+            <span className="subtle">
+              {data.config.automatic_training
+                ? "Revisión automática al abrir"
+                : "Entrenamiento manual"}{" "}
+              · {data.config.threads ?? "CPU"} hilos disponibles
+            </span>
           </div>
           <p className="subtle">
             {data.data_health.new_matches} partidos nuevos desde el último
@@ -222,7 +228,9 @@ export function Learning() {
               ? ` Modelo de hace ${data.data_health.model_age_days} días.`
               : " Todavía no hay un modelo publicado."}{" "}
             {data.data_health.training_recommended
-              ? " Conviene revisar los datos y entrenar cuando puedas dedicarle recursos."
+              ? data.config.automatic_training
+                ? "Los modelos se actualizarán al revisar el histórico."
+                : "Conviene revisar los datos y entrenar cuando puedas dedicarle recursos."
               : "Puedes seguir usando los modelos guardados."}
           </p>
           <div className="table-scroll">
@@ -340,7 +348,7 @@ export function Learning() {
                 </div>
                 <p className="learning-note">
                   No existe un ganador permanente. La comparación se renueva al
-                  entrenar manualmente con nuevos datos; intervalos por semanas
+                  actualizar los modelos con nuevos datos; intervalos por semanas
                   ajustados por el número de ligas y grupos comparados.
                 </p>
               </section>
@@ -535,7 +543,7 @@ export function Learning() {
         </p>
         <p className="subtle">
           {data?.config.automatic_training
-            ? `Reentrenamiento automático tras ${data.config.retrain_days} días y ${data.config.minimum_new_samples} partidos nuevos.`
+            ? "Los modelos se revisan al abrir. Se reentrenan si cambia el histórico o están caducados; si siguen vigentes, se reutilizan. Con la aplicación cerrada no se ejecutan trabajos."
             : "Entrenamiento manual: los modelos solo se vuelven a entrenar al pulsar Entrenar modelos."}{" "}
           Se conservan versiones, métricas y artefactos para reproducir la
           inferencia.

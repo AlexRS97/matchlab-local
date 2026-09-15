@@ -3,12 +3,16 @@ from pathlib import Path
 
 import numpy as np
 
+from app.core.resources import resolve_threads
 from app.learning.dataset import HEADS
 
 
 class TreeModels:
     def __init__(self, family: str, config: dict):
-        self.family, self.config = family, config
+        self.family, self.config = (
+            family,
+            {**config, "threads": resolve_threads(config.get("threads"))},
+        )
         self.models: dict = {}
         self.classes: dict = {}
 
@@ -100,7 +104,11 @@ class TreeModels:
     def predict(self, x, sequence=None):
         outputs = {}
         for head, model in self.models.items():
-            raw = np.asarray(model.predict_proba(x))
+            raw = np.asarray(
+                model.predict_proba(x, thread_count=self.config["threads"])
+                if self.family == "catboost"
+                else model.predict_proba(x)
+            )
             if raw.ndim == 1:
                 raw = np.column_stack([1 - raw, raw])
             expanded = np.zeros((len(x), HEADS[head]), dtype=np.float64)
@@ -127,13 +135,14 @@ class TreeModels:
             if family == "catboost":
                 from catboost import CatBoostClassifier
 
-                model = CatBoostClassifier(thread_count=2)
+                model = CatBoostClassifier(thread_count=result.config["threads"])
                 model.load_model(str(directory / f"{head}.cbm"))
             elif family == "xgboost":
                 from xgboost import XGBClassifier
 
-                model = XGBClassifier(n_jobs=2)
+                model = XGBClassifier()
                 model.load_model(str(directory / f"{head}.json"))
+                model.set_params(n_jobs=result.config["threads"])
             else:
                 import lightgbm as lgb
 
@@ -147,5 +156,5 @@ class BoosterProbabilities:
         self.booster = booster
 
     def predict_proba(self, x):
-        raw = self.booster.predict(x, num_threads=2)
+        raw = self.booster.predict(x, num_threads=resolve_threads())
         return np.column_stack([1 - raw, raw]) if raw.ndim == 1 else raw

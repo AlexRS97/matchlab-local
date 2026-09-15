@@ -71,6 +71,38 @@ async def test_daily_refresh_recalculates_and_records_status():
     db.close()
 
 
+async def test_new_models_recalculate_journey_without_rewriting_first_forecast(monkeypatch):
+    import asyncio
+
+    db = Database(":memory:")
+    runtime = AnalyticsRuntime(
+        Settings(_env_file=None, duckdb_path=":memory:", enable_scheduler=False), db
+    )
+    f = features()
+    runtime.fixtures.save(f.fixture)
+    runtime.stats.save_matches(f.home + f.away)
+    # Keep the test independent of whether the fixture falls past local midnight.
+    monkeypatch.setattr(runtime.fixtures, "for_date", lambda _: [f.fixture])
+    today = datetime.now(runtime.settings.timezone).date()
+    first = runtime.prediction_service.calculate(f.fixture)
+    runtime.performance.record(runtime.dashboard.rows(today, runtime.user_settings.get()))
+    original = db.query("SELECT * FROM prediction_results ORDER BY market")
+    assert original
+    progress = []
+    async with runtime.refresh_lock:
+        task = asyncio.create_task(runtime.reanalyse_after_training(lambda *x: progress.append(x)))
+        await asyncio.sleep(0)
+        assert not task.done() and not progress
+    await task
+    latest = runtime.predictions.latest(f.fixture.fixture_id)
+    assert latest["timestamp"] > first["timestamp"]
+    assert progress[0][:2] == (1, 1)
+    assert db.query("SELECT * FROM prediction_results ORDER BY market") == original
+    assert db.query("SELECT * FROM daily_rankings WHERE date=?", [today])
+    await runtime.close()
+    db.close()
+
+
 async def test_daily_request_is_queued_if_another_date_is_running():
     import asyncio
 

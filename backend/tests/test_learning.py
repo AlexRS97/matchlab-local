@@ -202,3 +202,20 @@ async def test_inference_cache_isolated_by_league_inputs_and_model_age(tmp_path,
     assert model.predict.call_count == 3
     await service.close()
     db.close()
+
+
+async def test_model_review_detects_expiration_and_new_rows_without_revision(tmp_path):
+    db = Database(":memory:")
+    service = LearningService(db, tmp_path)
+    now = datetime.now(UTC)
+    assert service.training_due(None, 2000, None, now)
+    report = {
+        "created_at": (now - timedelta(days=2)).isoformat(),
+        "dataset": {"historical_matches": 2000},
+    }
+    assert not service.training_due(report, 2000, None, now)
+    assert service.training_due(report, 2001, None, now)
+    report["created_at"] = (now - timedelta(days=100)).isoformat()
+    assert service.training_due(report, 2000, None, now)
+    await service.close()
+    db.close()

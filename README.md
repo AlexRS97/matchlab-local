@@ -27,7 +27,7 @@ Abre **http://localhost:3000**. API y documentación: http://localhost:8000/docs
 
 **Inicio y cierre manuales.** Usa los accesos directos **MatchLab** y **Detener MatchLab**, o los comandos anteriores. No se instala inicio con Windows ni tareas programadas. Cerrar la pestaña del navegador no detiene el servidor: antes de jugar, utiliza **Detener MatchLab** o `stop.ps1`. Esto cierra los procesos del proyecto, sus trabajos y la bandeja, conservando los datos y modelos ya guardados.
 
-La apertura reutiliza la web compilada salvo cambios en el código. El backend y la web usan prioridad baja en Windows; las librerías numéricas y DuckDB tienen dos hilos y las redes usan CPU. La caché evita repetir inferencias idénticas. Estos límites reducen el consumo, sin prometer ausencia de lag en cualquier equipo.
+La apertura reutiliza la web compilada salvo cambios en el código. Mientras está abierto, MatchLab utiliza prioridad normal y puede aprovechar todos los procesadores disponibles para modelos, librerías numéricas y DuckDB (`threads: auto`; 24 hilos en este equipo). La caché evita repetir cálculos innecesarios. La instalación actual de PyTorch utiliza CPU. Al ejecutar **Detener MatchLab** se cierran los procesos y entrenamientos del proyecto; no queda un servicio actualizando en segundo plano.
 
 El arranque es nativo: FastAPI + DuckDB y React/Vite. Sus registros están en `.runtime/`. `-NoBrowser` evita abrir una pestaña y `-NoBuild` reutiliza la compilación web. Para crear los accesos directos en otra instalación: `scripts/install-desktop.ps1`.
 
@@ -50,7 +50,7 @@ La selección por liga compara modelos estadísticos y familias ML por separado 
 
 **La cartelera y las predicciones se actualizan cuando abres MatchLab.** Si sigue abierto, el ciclo diario vence a las **06:00 Europe/Madrid**; si estaba cerrado, recupera la actualización al siguiente arranque. Recalcula las predicciones de los partidos pendientes y guarda fecha, número de partidos analizados y errores. El estado aparece en Today. Con MatchLab detenido no se descargan datos ni se ejecutan análisis.
 
-Mientras el backend sigue abierto, también revisa partidos cada 30 minutos, estadísticas según su caché y cuotas según la configuración y el presupuesto. La fecha cambia automáticamente al pasar de día. El histórico se comprueba diariamente mientras la aplicación esté abierta. **El entrenamiento automático está desactivado**: los modelos guardados siguen calculando predicciones, y solo se vuelven a entrenar cuando pulsas “Entrenar modelos” en Model Lab. El entrenamiento manual utiliza dos hilos por modelo.
+Mientras el backend sigue abierto, también revisa partidos cada 30 minutos, estadísticas según su caché y cuotas según la configuración y el presupuesto. La fecha cambia automáticamente al pasar de día. El histórico y la vigencia de los modelos se revisan al abrir y diariamente mientras la aplicación esté abierta. **El entrenamiento automático está activado**: se entrenan las cinco familias si no existe una versión, cambió el histórico o caducó el modelo. Sin novedades se reutiliza la versión vigente. También puedes forzar el entrenamiento desde Model Lab. Al guardar modelos nuevos se recalcula la jornada antes de dar el trabajo por terminado.
 
 Puedes lanzar una actualización puntual manualmente. Este comando es una acción explícita: si la aplicación está cerrada, abre un worker temporal que termina al finalizar; `stop.ps1` también puede detenerlo:
 
@@ -62,11 +62,11 @@ Puedes lanzar una actualización puntual manualmente. Este comando es una acció
 
 El panel **Actividad de MatchLab**, visible en todas las páginas, muestra porcentaje completado,
 porcentaje restante, fase actual, tiempo transcurrido y detalle de las fases. Sigue por separado
-la jornada, el histórico o entrenamiento y las actualizaciones periódicas de cuotas.
+la jornada, el histórico o entrenamiento y las actualizaciones periódicas de cuotas. Una barra global resume el avance de todos los trabajos; al terminar aparece un aviso en la aplicación y, si abriste desde el acceso directo, una notificación de la bandeja.
 
 Al arrancar se revisan la jornada y el histórico. **Actualizar** en Today vuelve a solicitar ambos
 para hoy. En Model Lab, **Entrenar modelos** muestra la preparación de datos, cada una de las cinco
-familias, calibración, comparación y guardado. Las redes muestran épocas completadas y los árboles,
+familias, calibración, comparación, guardado y aplicación a la jornada. Las redes muestran épocas completadas y los árboles,
 objetivos completados. El porcentaje mide avance por fases, no una estimación de tiempo restante.
 
 El 100% confirma que el trabajo terminó; si hubo fuentes ausentes o errores parciales, aparece

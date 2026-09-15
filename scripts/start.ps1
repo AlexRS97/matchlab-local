@@ -41,7 +41,7 @@ if (-not (Test-MatchLabApi)) {
     if (Test-Port 8000) { throw 'El puerto 8000 lo ocupa otro servicio. Detenlo antes de iniciar MatchLab.' }
     $ServerScript = Join-Path $BackendDirectory 'serve.py'
     $process = Start-Process -FilePath $Python -ArgumentList ('-u "' + $ServerScript + '"') -WorkingDirectory $BackendDirectory -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $RuntimeDirectory 'backend.log') -RedirectStandardError (Join-Path $RuntimeDirectory 'backend-error.log')
-    try { $process.PriorityClass = 'BelowNormal' } catch { Write-Warning 'No se pudo reducir la prioridad del proceso.' }
+    try { $process.PriorityClass = 'Normal' } catch { Write-Warning 'No se pudo establecer la prioridad normal del proceso.' }
     $process.Id | Set-Content -LiteralPath (Join-Path $RuntimeDirectory 'backend.pid')
 }
 $WebStarted = $false
@@ -66,13 +66,13 @@ if (-not $WebStarted) {
         try { & npm.cmd run build; if ($LASTEXITCODE -ne 0) { throw 'La compilacion web ha fallado.' } } finally { Pop-Location }
     }
     $process = Start-Process -FilePath $Node -ArgumentList ('"' + $Vite + '" preview --host 127.0.0.1 --port 3000 --strictPort') -WorkingDirectory $FrontendDirectory -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $RuntimeDirectory 'frontend.log') -RedirectStandardError (Join-Path $RuntimeDirectory 'frontend-error.log')
-    try { $process.PriorityClass = 'BelowNormal' } catch { Write-Warning 'No se pudo reducir la prioridad del proceso.' }
+    try { $process.PriorityClass = 'Normal' } catch { Write-Warning 'No se pudo establecer la prioridad normal del proceso.' }
     $process.Id | Set-Content -LiteralPath (Join-Path $RuntimeDirectory 'frontend.pid')
 }
 for ($attempt=0; $attempt -lt 25; $attempt++) {
     if ((Test-MatchLabApi) -and (Test-Port 3000)) {
         Write-Host 'MatchLab: http://localhost:3000 | API: http://localhost:8000/docs' -ForegroundColor Green
-        Write-Host 'Inicio manual. Actualizaciones solo mientras este abierto; entrenamiento desde Model Lab.'
+        Write-Host 'Inicio manual. Revision de datos y modelos al abrir; actualizaciones solo mientras este abierto.'
         Write-Host 'Antes de jugar: ejecuta .\stop.ps1. Cerrar la pestana no detiene MatchLab. Logs: .runtime/'
         if (-not $NoBrowser) { Start-Process 'http://localhost:3000' }
         exit 0

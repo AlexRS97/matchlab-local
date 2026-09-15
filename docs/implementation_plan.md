@@ -29,12 +29,12 @@ se prueban con respuestas controladas; la aceptación con cuentas reales sigue p
 - [x] Selección en validación y evaluación del blend frente al modelo estadístico mediante bootstrap semanal.
 - [x] Model Lab y detalle con versión, cobertura, comparación de candidatos y probabilidades identificadas.
 - [x] Primer entrenamiento real: 10.880 partidos históricos y 10.413 muestras elegibles.
-- [x] Actualización diaria del histórico con la app abierta; reentrenamiento manual por preferencia del usuario.
+- [x] Revisión del histórico y modelos al abrir y diariamente con la app abierta; reentrenamiento automático cuando cambia el histórico o caduca la versión.
 - [x] Actualización y recálculo diario de la jornada a las 06:00 Europe/Madrid, con recuperación al arrancar.
 - [x] Estado diario persistente, errores visibles y actualización adicional durante el día.
 - [x] Panel global de progreso con porcentajes, fases y contadores de archivos, objetivos y épocas.
 - [x] Worker temporal para actualizar con la aplicación cerrada y reutilización de la API cuando está abierta.
-- [x] Arranque manual, dos hilos, prioridad baja y reutilización del bundle para reducir carga al abrir.
+- [x] Arranque manual, capacidad de CPU automática, prioridad normal y cierre completo al terminar; se reutiliza el bundle vigente.
 - [x] Comparación estadística y ML por liga, importaciones incrementales verificadas y trazabilidad de entrenamientos.
 
 ## Pendiente de configuración externa
@@ -49,7 +49,7 @@ de aprendizaje no sustituye la cartelera diaria ni proporciona cuotas actuales.
 ## Decisiones y límites
 
 - Inicio y cierre manuales para liberar recursos al jugar. No se instala la tarea de Windows.
-  El reentrenamiento automático queda desactivado; los modelos guardados siguen disponibles.
+  El reentrenamiento automático utiliza los procesadores disponibles mientras está abierto; la barra global incluye la aplicación de los modelos y avisa al finalizar.
 
 - PulseScore identifica Orbit Exchange por separado: el fallback no se presenta como Betfair oficial.
 - El refresco respeta los presupuestos: una cuenta limitada puede dejar cobertura parcial o cuotas antiguas.

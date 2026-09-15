@@ -5,6 +5,7 @@ from typing import Any
 
 import duckdb
 
+from app.core.resources import available_cpu_threads
 from app.db.schema import SCHEMA
 
 
@@ -20,7 +21,7 @@ class Database:
         if path != ":memory:":
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
-        self.connection = duckdb.connect(path, config={"threads": 2})
+        self.connection = duckdb.connect(path, config={"threads": available_cpu_threads()})
         self.execute(SCHEMA)
 
     def execute(self, sql: str, parameters: list | None = None) -> None:

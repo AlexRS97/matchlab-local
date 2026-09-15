@@ -10,6 +10,7 @@ const scenario = JSON.parse(
 test("real application loads every main page without browser errors", async ({
   page,
 }) => {
+  test.setTimeout(60000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   for (const [path, title] of [
@@ -24,7 +25,10 @@ test("real application loads every main page without browser errors", async ({
     await expect(
       page.getByRole("heading", { name: new RegExp(title) }).first(),
     ).toBeVisible();
-    await expect(page.locator(".main-content .spin")).toHaveCount(0);
+    // Automatic training may be active; wait for page data, not every activity icon.
+    await expect(
+      page.getByText("Cargando datos…", { exact: true }),
+    ).toHaveCount(0, { timeout: 15000 });
   }
   await page.goto("/learning");
   const learning = await (
@@ -100,7 +104,12 @@ test("layout remains usable on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/learning");
   await expect(page.getByRole("heading", { name: "Model lab." })).toBeVisible();
-  await expect(page.locator(".main-content .spin")).toHaveCount(0);
+  await expect(page.getByText("Cargando datos…", { exact: true })).toHaveCount(
+    0,
+    {
+      timeout: 15000,
+    },
+  );
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(392);
@@ -169,10 +178,23 @@ test("progress shows running phases, training epochs and completion with warning
     page.getByText("Terminado con avisos", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Completado", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("progressbar", { name: "Progreso total" }),
+  ).toHaveAttribute("aria-valuenow", "100");
+  await expect(
+    page.getByText("Actualización finalizada con avisos", { exact: true }),
+  ).toBeVisible();
   await page.getByText("1 aviso · ver detalle").click();
   await expect(page.getByText(state.job.errors[0])).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(392);
+  state.job.status = "complete";
+  state.job.errors = [];
+  state.job.progress.steps[0].status = "complete";
+  await expect(
+    page.getByText("MatchLab está preparado", { exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveTitle("Actualización terminada · MatchLab");
 });

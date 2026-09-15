@@ -1,4 +1,5 @@
 import { Activity, Check, ChevronDown, TriangleAlert } from "lucide-react";
+import { useEffect } from "react";
 import { useResource } from "../hooks/useResource";
 
 interface Step {
@@ -151,6 +152,39 @@ function JobCard({ job, label }: { job: Job; label: string }) {
 
 export function ActivityPanel() {
   const { data, error } = useResource<ActivityStatus>("/refresh/status", 1500);
+  const jobs = [data?.job, data?.learning, data?.odds].filter(
+    (job): job is Job => !!job?.progress,
+  );
+  const finished =
+    !error &&
+    jobs.length > 0 &&
+    jobs.every((job) => !job.running && !!job.status);
+  const failed = jobs.some((job) =>
+    ["failed", "cancelled"].includes(job.status ?? ""),
+  );
+  const warnings = jobs.some(
+    (job) => job.errors.length > 0 || job.status === "partial",
+  );
+  const phases = jobs.reduce((sum, job) => sum + job.progress!.steps.length, 0);
+  const completed = jobs.reduce(
+    (sum, job) => sum + job.progress!.percent * job.progress!.steps.length,
+    0,
+  );
+  const percent = Math.min(
+    finished && !failed ? 100 : 99.9,
+    completed / Math.max(1, phases),
+  );
+  useEffect(() => {
+    const original = document.title;
+    if (finished)
+      document.title =
+        failed || warnings
+          ? "Revisa los avisos · MatchLab"
+          : "Actualización terminada · MatchLab";
+    return () => {
+      document.title = original;
+    };
+  }, [finished, failed, warnings]);
   if (!data && !error)
     return (
       <div className="activity-connecting" role="status">
@@ -168,6 +202,57 @@ export function ActivityPanel() {
         </span>
         <small>Avance por fases · el tiempo de cada fase puede variar</small>
       </div>
+      {jobs.length > 0 && (
+        <div className="activity-overall">
+          <div className="activity-card-heading">
+            <strong>
+              {finished
+                ? "Revisión finalizada"
+                : "Preparando datos, modelos y análisis"}
+            </strong>
+            <b>
+              {percent.toLocaleString("es-ES", { maximumFractionDigits: 1 })} %
+            </b>
+          </div>
+          <div
+            className="activity-track"
+            role="progressbar"
+            aria-label="Progreso total"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Number(percent.toFixed(1))}
+          >
+            <i style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      )}
+      {finished && (
+        <div
+          className={`activity-completion ${failed || warnings ? "has-warning" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
+          {failed || warnings ? (
+            <TriangleAlert size={20} />
+          ) : (
+            <Check size={20} />
+          )}
+          <div>
+            <strong>
+              {failed
+                ? "La actualización se ha interrumpido"
+                : warnings
+                  ? "Actualización finalizada con avisos"
+                  : "MatchLab está preparado"}
+            </strong>
+            <p>
+              {failed || warnings
+                ? "Revisa los avisos de las fuentes y los trabajos antes de utilizar los resultados."
+                : "Datos, revisión de modelos y análisis terminados. Ya puedes consultar los resultados."}
+            </p>
+          </div>
+        </div>
+      )}
       {error && (
         <p className="activity-disconnected" role="status">
           Sin conexión con el backend. El progreso mostrado puede estar

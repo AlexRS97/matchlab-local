@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch import nn
 
+from app.core.resources import resolve_threads
 from app.learning.dataset import HEADS
 
 
@@ -40,7 +41,7 @@ class DeepModel:
     def __init__(self, family: str, input_size: int, sequence_size: int, config: dict):
         self.family, self.config = family, config
         torch.manual_seed(config.get("seed", 42))
-        torch.set_num_threads(config.get("threads", 4))
+        torch.set_num_threads(resolve_threads(config.get("threads")))
         self.dimensions = {"input_size": input_size, "sequence_size": sequence_size}
         self.model = FootballNetwork(input_size, sequence_size, recurrent=family == "gru")
         self.epochs = 0
@@ -107,7 +108,7 @@ class DeepModel:
     @classmethod
     def load(cls, family: str, directory: Path):
         dims = json.loads((directory / "dimensions.json").read_text(encoding="utf-8"))
-        model = cls(family, **dims, config={"threads": 2})
+        model = cls(family, **dims, config={})
         model.model.load_state_dict(
             torch.load(directory / "weights.pt", map_location="cpu", weights_only=True)
         )

@@ -1602,3 +1602,27 @@ footer {
     grid-template-columns: 1fr 1fr;
   }
 }
+.activity-overall {
+  padding: 12px 0;
+}
+.activity-completion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: 1px solid #b8ef6d;
+  border-radius: 10px;
+  color: #c4f781;
+  background: #142019;
+}
+.activity-completion.has-warning {
+  border-color: #b68442;
+  color: #e9b877;
+  background: #221d17;
+}
+.activity-completion p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}

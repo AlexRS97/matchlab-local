@@ -79,6 +79,58 @@ async def test_history_updates_without_training_and_exposes_intermediate_counts(
     db.close()
 
 
+async def test_automatic_review_reuses_current_models_and_waits_for_new_analysis(
+    tmp_path, monkeypatch
+):
+    from app.learning.training import TRAINING_PHASES
+
+    db = Database(":memory:")
+    service = LearningService(db, tmp_path)
+    service.config["automatic_training"] = True
+    report = {
+        "created_at": datetime.now(UTC).isoformat(),
+        "dataset": {"historical_matches": 2000, "source_revision": "old"},
+        "models": {},
+    }
+    monkeypatch.setattr(service, "report", lambda: report)
+    revision = "old"
+
+    async def historical(*args):
+        return {"errors": [], "stored_matches": 2000, "source_revision": revision}
+
+    service.historical.update = historical
+    trained = Mock()
+    monkeypatch.setattr("app.learning.training.train", trained)
+    await service.update()
+    trained.assert_not_called()
+    assert not service.job["models_updated"] and service.job["progress"]["percent"] == 100
+
+    def train(db, directory, config, progress, tracker):
+        for key, _ in TRAINING_PHASES:
+            tracker.start(key)
+            tracker.end()
+        return report
+
+    trained.side_effect = train
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def apply_models(progress):
+        entered.set()
+        await release.wait()
+
+    service.on_trained = apply_models
+    revision = "corrected"
+    service.start()
+    await entered.wait()
+    assert service.job["running"] and service.job["progress"]["percent"] < 100
+    release.set()
+    await service.task
+    assert service.job["models_updated"] and service.job["progress"]["percent"] == 100
+    trained.assert_called_once()
+    await service.close()
+    db.close()
+
+
 def test_all_five_training_families_emit_progress_before_publishing(tmp_path, monkeypatch):
     pytest.importorskip("torch")
     from app.learning.training import TRAINING_PHASES, train
