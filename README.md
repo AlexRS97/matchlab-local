@@ -4,6 +4,10 @@ Aplicación local para analizar la jornada de fútbol, comparar probabilidades p
 
 > Repositorio propietario y privado. Consulta [LICENSE](LICENSE) y [NOTICE.md](NOTICE.md).
 
+**¿Vas a instalarlo en otro equipo o colaborar?** Empieza por la
+[guía para compañeros](docs/collaboration.md): acceso, instalación desde cero, fuentes,
+mapa del código, experimentos y envío de mejoras.
+
 ## Iniciar en Windows
 
 Requisitos para una instalación nueva: Python 3.12 y Node.js 22. En este equipo también se reconocen los runtimes portables de `.tools/`.
@@ -120,6 +124,7 @@ El escenario del navegador usa una base en memoria y respuestas interceptadas. N
 
 ## Documentación
 
+- [Guía de colaboración e investigación](docs/collaboration.md) y [plantilla de experimento](docs/experiments/template.md).
 - [Arquitectura](docs/architecture.md), [metodología y límites](docs/methodology.md), [mercados](docs/markets.md).
 - [Instalación y problemas habituales de Windows](docs/setup_windows.md).
 - [Plan y estado de implementación](docs/implementation_plan.md).

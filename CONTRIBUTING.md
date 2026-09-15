@@ -3,6 +3,11 @@
 MatchLab es un proyecto propietario y privado. No se aceptan contribuciones externas salvo
 autorización previa y escrita del propietario.
 
+Para el compañero autorizado por Alex, el recorrido de instalación, uso, investigación y
+pull requests está en [docs/collaboration.md](docs/collaboration.md). Las propuestas de datos
+y modelos pueden abrirse con la plantilla **Investigación de datos o modelos** y documentarse
+con la [plantilla de experimento](docs/experiments/template.md).
+
 ## Requisitos de una contribución autorizada
 
 - Crea una rama desde `main` y abre un pull request.

@@ -30,6 +30,7 @@ Para desarrollar con recarga, utiliza dos terminales:
 
 ```powershell
 # Terminal 1, raíz del proyecto
+$env:ENABLE_SCHEDULER = "false"
 .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -40,6 +41,12 @@ npm run dev
 ```
 
 No mantengas el servidor del arranque nativo abierto a la vez que otro backend con `--reload`.
+En este modo se desactiva el arranque automático de trabajos para no repetir actualizaciones
+con cada recarga del código; puedes solicitarlas desde la web. Para salir, pulsa **Ctrl+C en
+ambas terminales** y, en la terminal del backend, ejecuta `Remove-Item Env:ENABLE_SCHEDULER`.
+El cierre con `stop.ps1` está destinado a los procesos del arranque normal; no lo uses como
+sustituto de cerrar los supervisores de desarrollo. Una terminal nueva recupera la configuración
+habitual de `.env`. Para instalar en el equipo de un compañero, sigue la [guía de colaboración](collaboration.md).
 
 ## Uso manual y cierre antes de jugar
 

@@ -1,0 +1,41 @@
+name: Investigación de datos o modelos
+description: Define una hipótesis reproducible y cómo se evaluará antes de cambiar el modelo.
+title: "[Investigación] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Consulta docs/collaboration.md y docs/experiments/template.md. No adjuntes credenciales, datasets ni artefactos privados."
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hipótesis y alcance
+      description: Qué problema resuelve, en qué ligas y mercados y cuál es la referencia actual.
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Fuentes e investigación
+      description: Artículos o documentación original, datos, cobertura y disponibilidad antes del partido.
+    validations:
+      required: true
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: Evaluación y criterio de aceptación
+      description: Periodos, muestra común, métricas, incertidumbre y criterio fijado antes de ver resultados.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproducción y recursos
+      description: Commit, configuración, semilla, snapshot o huellas, equipo y presupuesto de cómputo.
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Resultados y decisión
+      description: Completar al terminar; enlaza el informe del experimento, incluidos resultados negativos y límites.
